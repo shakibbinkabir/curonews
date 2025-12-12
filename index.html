@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CuroNews - Health Discovery Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #00D4AA;
+            --secondary-color: #1A73E8;
+            --accent-color: #FF6B6B;
+            --dark-bg: #0A0A0B;
+            --card-bg: #1A1A1C;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A3;
+            --border-color: #2A2A2C;
+            --gradient-1: linear-gradient(135deg, #00D4AA 0%, #1A73E8 100%);
+            --gradient-2: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            --gradient-3: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-4: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding-bottom: 80px; /* Space for bottom navigation */
+        }
+
+        /* Top Navigation - Minimal for mobile */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 11, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            padding: 1rem 1.5rem;
+        }
+
+        .top-nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-bar {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 1rem;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .notifications {
+            position: relative;
+            padding: 0.5rem;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .notifications:hover {
+            background: var(--card-bg);
+            color: var(--primary-color);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+        }
+
+        /* Main Content - Pinterest Style Masonry Layout */
+        .main-container {
+            margin-top: 0px;
+            padding: 1rem;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .masonry-grid {
+            columns: 1;
+            column-gap: 1rem;
+        }
+
+        @media (min-width: 480px) {
+            .masonry-grid {
+                columns: 2;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .masonry-grid {
+                columns: 3;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .masonry-grid {
+                columns: 4;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .masonry-grid {
+                columns: 5;
+            }
+        }
+
+        /* Pinterest-style Cards */
+        .pin-card {
+            break-inside: avoid;
+            margin-bottom: 1rem;
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pin-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .pin-image {
+            width: 100%;
+            height: auto;
+            min-height: 120px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .pin-image.small {
+            height: 150px;
+        }
+
+        .pin-image.medium {
+            height: 200px;
+        }
+
+        .pin-image.large {
+            height: 300px;
+        }
+
+        .pin-image.xl {
+            height: 400px;
+        }
+
+        .pin-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            opacity: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            padding: 1rem;
+        }
+
+        .pin-card:hover .pin-overlay {
+            opacity: 1;
+        }
+
+        .pin-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .pin-action {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 25px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pin-action:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .pin-action.save {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .pin-action.save:hover {
+            background: #ff5252;
+        }
+
+        .pin-content {
+            padding: 1rem;
+        }
+
+        .pin-category {
+            color: var(--primary-color);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .pin-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .pin-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.75rem;
+        }
+
+        .pin-author {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .author-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+        }
+
+        .author-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .pin-stats {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Special Card Types */
+        .hero-pin {
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 10px 20px rgba(0, 212, 170, 0.2);
+        }
+
+        .professional-pin {
+            border: 2px solid var(--secondary-color);
+        }
+
+        .professional-badge {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            background: var(--secondary-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .trending-badge {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: var(--accent-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        /* Bottom Navigation - Mobile First */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 26, 28, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            z-index: 1000;
+            padding: 0.5rem 0;
+        }
+
+        .bottom-nav-content {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+        }
+
+        .nav-item:hover {
+            color: var(--primary-color);
+        }
+
+        .nav-icon {
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+
+        .add-button {
+            background: var(--gradient-1);
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            top: -8px;
+        }
+
+        .add-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0, 212, 170, 0.4);
+        }
+
+        /* Floating Elements */
+        .category-chips {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .category-chips::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-chip {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-chip.active,
+        .category-chip:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Modal for Creating Content */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid var(--border-color);
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.2);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            border: none;
+            color: white;
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pin-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        /* Loading State */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hide scrollbar on mobile for cleaner look */
+        @media (max-width: 768px) {
+            body {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            
+            body::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <header class="top-nav">
+        <div class="top-nav-content">
+            <div class="logo">CuroNews</div>
+            <div class="search-bar">
+                <div class="search-icon">🔍</div>
+                <input type="text" class="search-input" placeholder="Search health news, research, treatments...">
+            </div>
+            <button class="notifications">
+                🔔
+                <span class="notification-badge"></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Category Filter -->
+        <div class="category-chips">
+            <div class="category-chip active">All</div>
+            <div class="category-chip">Breaking</div>
+            <div class="category-chip">Research</div>
+            <div class="category-chip">Mental Health</div>
+            <div class="category-chip">Cardiology</div>
+            <div class="category-chip">Nutrition</div>
+            <div class="category-chip">Technology</div>
+            <div class="category-chip">Wellness</div>
+            <div class="category-chip">Professional</div>
+        </div>
+
+        <!-- Masonry Grid -->
+        <div class="masonry-grid" id="masonry-grid">
+            <!-- Hero Pin -->
+            <div class="pin-card hero-pin">
+                <div class="pin-image xl" style="background: var(--gradient-2);">
+                    <div>
+                        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Cancer Breakthrough</h2>
+                        <p style="opacity: 0.9;">94% success rate in trials</p>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60px; height: 60px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #333;">▶</div>
+                    </div>
+                </div>
+                <div class="pin-overlay">
+                    <div class="pin-actions">
+                        <button class="pin-action save">Save</button>
+                        <button class="pin-action">Share</button>
+                    </div>
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Breaking News</div>
+                    <div class="pin-title">Revolutionary Cancer Treatment Shows 94% Success Rate in Clinical Trials</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar"></div>
+                            <div class="author-name">Medical Today</div>
+                        </div>
+                        <div class="pin-stats">2.1k saves</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Research Pin -->
+            <div class="pin-card professional-pin">
+                <div class="professional-badge">✓ Peer Reviewed</div>
+                <div class="pin-image medium" style="background: var(--gradient-3);">
+                    <div>AI Diagnostic Tool<br>67% Accuracy Improvement</div>
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Medical Research</div>
+                    <div class="pin-title">AI-Powered Diagnostic Tool Reduces Misdiagnosis by 67%</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar" style="background: var(--gradient-3);"></div>
+                            <div class="author-name">Dr. Sarah Chen</div>
+                        </div>
+                        <div class="pin-stats">456 saves</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trending Pin -->
+            <div class="pin-card">
+                <div class="trending-badge">🔥 Trending</div>
+                <div class="pin-image large" style="background: var(--gradient-4);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">73%</div>
+                    <div>Healthcare Workers<br>Report Burnout</div>
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Healthcare Crisis</div>
+                    <div class="pin-title">Mental Health Emergency: Healthcare Workers Reach Breaking Point</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar" style="background: var(--gradient-4);"></div>
+                            <div class="author-name">Health Crisis Report</div>
+                        </div>
+                        <div class="pin-stats">1.2k saves</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Regular Pins -->
+            <div class="pin-card">
+                <div class="pin-image small" style="background: linear-gradient(45deg, #667eea, #764ba2);">
+                    Mediterranean Diet Study
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Nutrition</div>
+                    <div class="pin-title">Mediterranean Diet Reduces Dementia Risk by 40%</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar" style="background: #667eea;"></div>
+                            <div class="author-name">Dr. Maria Rodriguez</div>
+                        </div>
+                        <div class="pin-stats">789 saves</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pin-card">
+                <div class="pin-image medium" style="background: linear-gradient(45deg, #f093fb, #f5576c);">
+                    VR Therapy for PTSD<br>86% Success Rate
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Mental Health</div>
+                    <div class="pin-title">Virtual Reality Therapy Shows Promise for PTSD Treatment</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar" style="background: #f093fb;"></div>
+                            <div class="author-name">Dr. Alex Thompson</div>
+                        </div>
+                        <div class="pin-stats">234 saves</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pin-card">
+                <div class="pin-image small" style="background: linear-gradient(45deg, #4facfe, #00f2fe);">
+                    Sleep Study Results
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Sleep Medicine</div>
+                    <div class="pin-title">New Sleep Study Reveals Link Between Sleep Quality and Immunity</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar" style="background: #4facfe;"></div>
+                            <div class="author-name">Sleep Research Lab</div>
+                        </div>
+                        <div class="pin-stats">567 saves</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pin-card">
+                <div class="pin-image large" style="background: linear-gradient(45deg, #43e97b, #38f9d7);">
+                    <div style="font-size: 1.2rem;">Gene Therapy<br>Breakthrough</div>
+                    <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">First cure for inherited blindness</div>
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Gene Therapy</div>
+                    <div class="pin-title">FDA Approves First Gene Therapy for Inherited Blindness</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar" style="background: #43e97b;"></div>
+                            <div class="author-name">FDA News</div>
+                        </div>
+                        <div class="pin-stats">2.3k saves</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pin-card">
+                <div class="pin-image medium" style="background: linear-gradient(45deg, #fa709a, #fee140);">
+                    Telemedicine Growth<br>300% Increase
+                </div>
+                <div class="pin-content">
+                    <div class="pin-category">Digital Health</div>
+                    <div class="pin-title">Telemedicine Adoption Surges 300% Post-Pandemic</div>
+                    <div class="pin-meta">
+                        <div class="pin-author">
+                            <div class="author-avatar" style="background: #fa709a;"></div>
+                            <div class="author-name">Digital Health Report</div>
+                        </div>
+                        <div class="pin-stats">345 saves</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loading-spinner" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-content">
+            <a href="#" class="nav-item active">
+                <div class="nav-icon">🏠</div>
+                <div>Home</div>
+            </a>
+            <a href="#" class="nav-item">
+                <div class="nav-icon">🔍</div>
+                <div>Search</div>
+            </a>
+            <button class="add-button" onclick="openCreateModal()">
+                <div>+</div>
+            </button>
+            <a href="#" class="nav-item">
+                <div class="nav-icon">💬</div>
+                <div>Messages</div>
+            </a>
+            <a href="#" class="nav-item">
+                <div class="nav-icon">👤</div>
+                <div>Profile</div>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Create Content Modal -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <h2>Create Health Content</h2>
+            <form>
+                <div class="form-group">
+                    <label>Content Type</label>
+                    <select>
+                        <option>News Article</option>
+                        <option>Research Paper</option>
+                        <option>Health Tip</option>
+                        <option>Discussion Post</option>
+                        <option>Video Content</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" placeholder="Enter compelling title...">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select>
+                        <option>Breaking News</option>
+                        <option>Research</option>
+                        <option>Mental Health</option>
+                        <option>Cardiology</option>
+                        <option>Nutrition</option>
+                        <option>Technology</option>
+                        <option>Wellness</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea placeholder="Brief description or key points..." rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Tags</label>
+                    <input type="text" placeholder="Add relevant tags...">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Publish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let isLoading = false;
+        let currentCategory = 'All';
+
+        // Modal Functions
+        function openCreateModal() {
+            document.getElementById('modal-overlay').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+        }
+
+        // Close modal when clicking overlay
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Category Filter
+        document.querySelectorAll('.category-chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                // Remove active class from all chips
+                document.querySelectorAll('.category-chip').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked chip
+                this.classList.add('active');
+                currentCategory = this.textContent;
+                
+                // Filter content (in real app, this would make an API call)
+                console.log('Filtering by category:', currentCategory);
+            });
+        });
+
+        // Bottom Navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all items
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                
+                // Add active class to clicked item
+                this.classList.add('active');
+                
+                // Handle navigation
+                const section = this.textContent.trim();
+                console.log('Navigating to:', section);
+            });
+        });
+
+        // Infinite Scroll
+        window.addEventListener('scroll', function() {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 1000 && !isLoading) {
+                loadMorePins();
+            }
+        });
+
+        function loadMorePins() {
+            isLoading = true;
+            const spinner = document.getElementById('loading-spinner');
+            spinner.style.display = 'flex';
+
+            // Simulate loading new content
+            setTimeout(() => {
+                const grid = document.getElementById('masonry-grid');
+                const colors = [
+                    'linear-gradient(45deg, #667eea, #764ba2)',
+                    'linear-gradient(45deg, #f093fb, #f5576c)',
+                    'linear-gradient(45deg, #4facfe, #00f2fe)',
+                    'linear-gradient(45deg, #43e97b, #38f9d7)',
+                    'linear-gradient(45deg, #fa709a, #fee140)',
+                    'var(--gradient-1)',
+                    'var(--gradient-2)',
+                    'var(--gradient-3)'
+                ];
+                
+                const sizes = ['small', 'medium', 'large'];
+                const categories = ['Research', 'Wellness', 'Technology', 'Mental Health', 'Nutrition'];
+                const titles = [
+                    'New Study on Heart Health and Exercise',
+                    'Breakthrough in Alzheimer\'s Research',
+                    'Mental Health Apps Effectiveness Study',
+                    'Latest Advances in Robotic Surgery',
+                    'Plant-Based Diet Benefits Revealed',
+                    'Microbiome Research Findings',
+                    'Sleep Quality and Cognitive Function',
+                    'Innovative Cancer Screening Method'
+                ];
+
+                // Add 4-6 new pins
+                const numPins = Math.floor(Math.random() * 3) + 4;
+                
+                for (let i = 0; i < numPins; i++) {
+                    const pin = document.createElement('div');
+                    pin.className = 'pin-card';
+                    pin.style.opacity = '0';
+                    
+                    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                    const randomSize = sizes[Math.floor(Math.random() * sizes.length)];
+                    const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+                    const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+                    const randomSaves = Math.floor(Math.random() * 1000) + 100;
+                    
+                    pin.innerHTML = `
+                        <div class="pin-image ${randomSize}" style="background: ${randomColor};">
+                            <div>${randomTitle.substring(0, 30)}</div>
+                        </div>
+                        <div class="pin-overlay">
+                            <div class="pin-actions">
+                                <button class="pin-action save">Save</button>
+                                <button class="pin-action">Share</button>
+                            </div>
+                        </div>
+                        <div class="pin-content">
+                            <div class="pin-category">${randomCategory}</div>
+                            <div class="pin-title">${randomTitle}</div>
+                            <div class="pin-meta">
+                                <div class="pin-author">
+                                    <div class="author-avatar" style="background: ${randomColor};"></div>
+                                    <div class="author-name">Dr. Researcher</div>
+                                </div>
+                                <div class="pin-stats">${randomSaves} saves</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    grid.appendChild(pin);
+                    
+                    // Fade in animation
+                    setTimeout(() => {
+                        pin.style.transition = 'opacity 0.5s ease';
+                        pin.style.opacity = '1';
+                    }, i * 100);
+                    
+                    // Add click handler
+                    pin.addEventListener('click', function() {
+                        this.style.transform = 'scale(0.98)';
+                        setTimeout(() => {
+                            this.style.transform = 'translateY(-4px)';
+                        }, 150);
+                    });
+                }
+                
+                spinner.style.display = 'none';
+                isLoading = false;
+            }, 1000);
+        }
+
+        // Pin Card Interactions
+        document.querySelectorAll('.pin-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                // Don't trigger if clicking on action buttons
+                if (!e.target.classList.contains('pin-action')) {
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = 'translateY(-4px)';
+                    }, 150);
+                }
+            });
+        });
+
+        // Save Button Functionality
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('save')) {
+                e.stopPropagation();
+                const btn = e.target;
+                
+                if (btn.textContent === 'Save') {
+                    btn.textContent = 'Saved';
+                    btn.style.background = 'var(--primary-color)';
+                } else {
+                    btn.textContent = 'Save';
+                    btn.style.background = 'var(--accent-color)';
+                }
+            }
+        });
+
+        // Search Functionality
+        const searchInput = document.querySelector('.search-input');
+        let searchTimeout;
+
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = e.target.value.toLowerCase();
+                if (query.length > 2) {
+                    console.log('Searching for:', query);
+                    // In real app, this would make an API call
+                }
+            }, 500);
+        });
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'k':
+                        e.preventDefault();
+                        searchInput.focus();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        openCreateModal();
+                        break;
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Smooth Scroll for Category Chips
+        const categoryChips = document.querySelector('.category-chips');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+
+        categoryChips.addEventListener('mousedown', (e) => {
+            isDown = true;
+            categoryChips.style.cursor = 'grabbing';
+            startX = e.pageX - categoryChips.offsetLeft;
+            scrollLeft = categoryChips.scrollLeft;
+        });
+
+        categoryChips.addEventListener('mouseleave', () => {
+            isDown = false;
+            categoryChips.style.cursor = 'default';
+        });
+
+        categoryChips.addEventListener('mouseup', () => {
+            isDown = false;
+            categoryChips.style.cursor = 'default';
+        });
+
+        categoryChips.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - categoryChips.offsetLeft;
+            const walk = (x - startX) * 2;
+            categoryChips.scrollLeft = scrollLeft - walk;
+        });
+
+        // Pull to Refresh (Mobile)
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            if (window.scrollY === 0) {
+                touchStartY = e.touches[0].clientY;
+            }
+        });
+
+        document.addEventListener('touchmove', function(e) {
+            if (window.scrollY === 0) {
+                touchEndY = e.touches[0].clientY;
+                
+                // Pull down threshold
+                if (touchEndY - touchStartY > 100) {
+                    console.log('Pull to refresh triggered');
+                    // In real app, this would refresh the feed
+                }
+            }
+        });
+
+        // Notification Click
+        document.querySelector('.notifications').addEventListener('click', function() {
+            alert('Notifications feature - would show dropdown with recent notifications');
+        });
+
+        // Form Submit
+        document.querySelector('.modal form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(this);
+            console.log('Publishing content...');
+            
+            // Show success message
+            alert('Content published successfully!');
+            closeModal();
+            
+            // Reset form
+            this.reset();
+        });
+
+        // Initialize
+        console.log('CuroNews Pinterest-style app initialized');
+        console.log('Features: Masonry layout, Mobile-first navigation, Infinite scroll, Pull to refresh');
+        console.log('Keyboard shortcuts: Ctrl/Cmd+K (Search), Ctrl/Cmd+N (Create), Esc (Close modal)');
+
+        // Simulate real-time notification
+        setTimeout(() => {
+            const notificationBadge = document.querySelector('.notification-badge');
+            notificationBadge.style.animation = 'pulse 2s infinite';
+        }, 3000);
+    </script>
+</body>
+</html>
