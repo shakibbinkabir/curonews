@@ -8,11 +8,17 @@ import { CategoryFilter } from './category-filter';
 
 interface FeedContainerProps {
   initialCategory?: string;
+  initialSearch?: string;
 }
 
-export function FeedContainer({ initialCategory }: FeedContainerProps) {
+export function FeedContainer({ initialCategory, initialSearch }: FeedContainerProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory || null);
+  const [searchTerm, setSearchTerm] = useState(initialSearch || '');
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSearchTerm(initialSearch || '');
+  }, [initialSearch]);
 
   const {
     data,
@@ -23,6 +29,7 @@ export function FeedContainer({ initialCategory }: FeedContainerProps) {
   } = usePosts({
     category: selectedCategory || undefined,
     per_page: 12,
+    search: searchTerm.trim() || undefined,
   });
 
   // Infinite scroll with Intersection Observer
@@ -46,23 +53,40 @@ export function FeedContainer({ initialCategory }: FeedContainerProps) {
   const posts = data?.pages.flatMap((page) => page.data) ?? [];
 
   return (
-    <div className="space-y-6">
-      <CategoryFilter
-        selectedCategory={selectedCategory}
-        onSelectCategory={setSelectedCategory}
-      />
+    <section className="container-padding py-8 lg:py-12">
+      {/* Page Header */}
+      <div className="mb-8 lg:mb-12">
+        <h1 className="text-3xl lg:text-4xl xl:text-5xl font-semibold tracking-tight mb-3">
+          Discover
+        </h1>
+        <p className="text-muted-foreground text-base lg:text-lg max-w-2xl">
+          Curated health insights, research, and wellness tips from trusted sources.
+        </p>
+      </div>
 
+      {/* Category Filter */}
+      <div className="mb-8 lg:mb-10">
+        <CategoryFilter
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+        />
+      </div>
+
+      {/* Posts Grid */}
       <PostGrid posts={posts} isLoading={isLoading} />
 
       {/* Load More Trigger */}
-      <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+      <div ref={loadMoreRef} className="h-24 flex items-center justify-center mt-8">
         {isFetchingNextPage && (
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span className="text-sm font-medium">Loading more...</span>
+          </div>
         )}
         {!hasNextPage && posts.length > 0 && (
-          <p className="text-sm text-muted-foreground">No more posts</p>
+          <p className="text-sm text-muted-foreground">You&apos;ve reached the end</p>
         )}
       </div>
-    </div>
+    </section>
   );
 }

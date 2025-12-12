@@ -1,18 +1,43 @@
 'use client';
 
-import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
-export function PostSkeleton() {
+interface PostSkeletonProps {
+  variant?: 'default' | 'featured' | 'wide' | 'tall';
+}
+
+export function PostSkeleton({ variant = 'default' }: PostSkeletonProps) {
+  const aspectClasses = {
+    default: 'aspect-[4/5]',
+    featured: 'aspect-square sm:aspect-[4/3]',
+    wide: 'aspect-[16/9]',
+    tall: 'aspect-[3/5]',
+  };
+
+  const gridClasses = {
+    default: '',
+    featured: 'bento-item-featured',
+    wide: 'bento-item-wide',
+    tall: 'bento-item-tall',
+  };
+
   return (
-    <div className="relative aspect-[9/16] overflow-hidden rounded-3xl bg-muted">
-      <Skeleton className="absolute inset-0" />
-      <div className="absolute bottom-0 left-0 right-0 p-6 space-y-3">
-        <Skeleton className="h-4 w-16" />
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-3/4" />
-        <div className="flex gap-3 pt-2">
-          <Skeleton className="h-8 w-16" />
-          <Skeleton className="h-8 w-10" />
+    <div className={cn('rounded-2xl lg:rounded-3xl overflow-hidden bg-card', gridClasses[variant])}>
+      {/* Image skeleton */}
+      <div className={cn('relative overflow-hidden', aspectClasses[variant])}>
+        <div className="absolute inset-0 skeleton" />
+      </div>
+      
+      {/* Content skeleton */}
+      <div className="p-4 lg:p-5 space-y-3">
+        <div className="h-3 w-16 rounded-full skeleton" />
+        <div className="space-y-2">
+          <div className="h-4 w-full rounded-lg skeleton" />
+          <div className="h-4 w-3/4 rounded-lg skeleton" />
+        </div>
+        <div className="flex items-center justify-between pt-1">
+          <div className="h-4 w-12 rounded-full skeleton" />
+          <div className="h-3 w-16 rounded-full skeleton" />
         </div>
       </div>
     </div>

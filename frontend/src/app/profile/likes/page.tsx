@@ -6,7 +6,6 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getLikedPosts } from "@/lib/api/posts";
 import { PostGrid } from "@/components/posts/post-grid";
-import { PostSkeleton } from "@/components/posts/post-skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Heart } from "lucide-react";
 import Link from "next/link";
@@ -32,38 +31,37 @@ export default function LikedPostsPage() {
   }
 
   return (
-    <div className="container max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center gap-4 mb-8">
+    <div className="container-padding py-8 lg:py-12">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8 lg:mb-12">
         <Link href="/profile">
-          <Button variant="ghost" size="icon">
+          <button className="h-10 w-10 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center transition-colors">
             <ArrowLeft className="h-5 w-5" />
-          </Button>
+          </button>
         </Link>
-        <div className="flex items-center gap-2">
-          <Heart className="h-6 w-6 text-red-500 fill-red-500" />
-          <h1 className="text-2xl font-bold">Liked Posts</h1>
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-semibold">Liked Posts</h1>
+          <p className="text-muted-foreground text-sm">Posts you've shown love to</p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <PostSkeleton key={i} />
-          ))}
-        </div>
+        <PostGrid posts={[]} isLoading={true} />
       ) : error ? (
-        <div className="text-center py-12">
+        <div className="text-center py-16 lg:py-24">
           <p className="text-muted-foreground">Failed to load liked posts</p>
         </div>
       ) : !data?.data || data.data.length === 0 ? (
-        <div className="text-center py-12">
-          <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-semibold mb-2">No liked posts yet</h2>
-          <p className="text-muted-foreground mb-4">
+        <div className="text-center py-16 lg:py-24">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-secondary flex items-center justify-center">
+            <Heart className="h-10 w-10 text-muted-foreground" />
+          </div>
+          <h2 className="text-xl lg:text-2xl font-semibold mb-2">No liked posts yet</h2>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             Start exploring and like posts you enjoy!
           </p>
           <Link href="/">
-            <Button>Browse Posts</Button>
+            <Button className="rounded-full px-6">Browse Posts</Button>
           </Link>
         </div>
       ) : (

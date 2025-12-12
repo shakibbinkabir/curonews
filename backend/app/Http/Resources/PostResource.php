@@ -28,6 +28,7 @@ class PostResource extends JsonResource
             'tags' => TagResource::collection($this->whenLoaded('tags')),
             'source_name' => $this->source_name,
             'source_url' => $this->when($request->routeIs('api.posts.show'), $this->source_url),
+            'status' => $this->when($user && in_array($user->role, ['admin', 'sourcer']), $this->status),
             'published_at' => $this->published_at?->toIso8601String(),
             'likes_count' => $this->likes_count ?? $this->interactions()->where('type', 'like')->count(),
             'saves_count' => $this->saves_count ?? $this->interactions()->where('type', 'save')->count(),

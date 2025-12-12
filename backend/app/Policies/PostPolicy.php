@@ -65,8 +65,17 @@ class PostPolicy
      */
     public function delete(User $user, Post $post): bool
     {
-        // Only admin can delete posts
-        return $user->isAdmin();
+        // Admin can delete any post
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        // Sourcer can delete their own draft posts
+        if ($user->isSourcer() && $post->sourcer_id === $user->id) {
+            return $post->status === 'draft';
+        }
+
+        return false;
     }
 
     /**

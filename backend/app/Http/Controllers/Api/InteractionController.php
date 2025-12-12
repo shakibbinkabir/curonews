@@ -57,7 +57,7 @@ class InteractionController extends Controller
                 $query->where('user_id', $user->id)
                       ->where('type', 'like');
             })
-            ->where('status', 'approved')
+            ->where('status', 'published')
             ->orderByDesc('published_at')
             ->paginate($request->get('per_page', 20));
 
@@ -77,7 +77,7 @@ class InteractionController extends Controller
                 $query->where('user_id', $user->id)
                       ->where('type', 'save');
             })
-            ->where('status', 'approved')
+            ->where('status', 'published')
             ->orderByDesc('published_at')
             ->paginate($request->get('per_page', 20));
 

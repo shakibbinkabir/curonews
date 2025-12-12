@@ -4,11 +4,9 @@ import { useAuth } from "@/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Heart, Bookmark, Settings, LogOut } from "lucide-react";
+import { Heart, Bookmark, Settings, LogOut, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -33,59 +31,89 @@ export default function ProfilePage() {
       .slice(0, 2);
   };
 
+  const menuItems = [
+    {
+      href: "/profile/likes",
+      icon: Heart,
+      label: "Liked Posts",
+      description: "Posts you've liked",
+    },
+    {
+      href: "/profile/saved",
+      icon: Bookmark,
+      label: "Saved Posts",
+      description: "Posts you've saved for later",
+    },
+    {
+      href: "/profile/settings",
+      icon: Settings,
+      label: "Settings",
+      description: "Manage your account",
+    },
+  ];
+
   return (
-    <div className="container max-w-2xl mx-auto px-4 py-8">
-      <Card>
-        <CardHeader className="text-center">
-          <div className="flex flex-col items-center gap-4">
-            <Avatar className="h-24 w-24">
-              <AvatarImage src={user.avatar_url || undefined} alt={user.name} />
-              <AvatarFallback className="text-2xl">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-2xl">{user.name}</CardTitle>
-              <p className="text-muted-foreground">{user.email}</p>
-            </div>
-          </div>
-        </CardHeader>
-        <Separator />
-        <CardContent className="pt-6">
-          <nav className="space-y-2">
-            <Link href="/profile/likes">
-              <Button variant="ghost" className="w-full justify-start gap-3">
-                <Heart className="h-5 w-5" />
-                Liked Posts
-              </Button>
-            </Link>
-            <Link href="/profile/saved">
-              <Button variant="ghost" className="w-full justify-start gap-3">
-                <Bookmark className="h-5 w-5" />
-                Saved Posts
-              </Button>
-            </Link>
-            <Link href="/profile/settings">
-              <Button variant="ghost" className="w-full justify-start gap-3">
-                <Settings className="h-5 w-5" />
-                Settings
-              </Button>
-            </Link>
-            <Separator className="my-4" />
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 text-destructive hover:text-destructive"
-              onClick={() => {
-                logout();
-                router.push("/");
-              }}
+    <div className="container-padding py-8 lg:py-16">
+      <div className="max-w-2xl mx-auto">
+        {/* Profile Header */}
+        <div className="text-center mb-12">
+          <Avatar className="h-24 w-24 lg:h-32 lg:w-32 mx-auto mb-6 ring-4 ring-background shadow-xl">
+            <AvatarImage src={user.avatar_url || undefined} alt={user.name} />
+            <AvatarFallback className="text-2xl lg:text-3xl font-semibold bg-primary text-primary-foreground">
+              {getInitials(user.name)}
+            </AvatarFallback>
+          </Avatar>
+          <h1 className="text-2xl lg:text-3xl font-semibold mb-2">{user.name}</h1>
+          <p className="text-muted-foreground">{user.email}</p>
+        </div>
+
+        {/* Menu Items */}
+        <div className="space-y-3">
+          {menuItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-4 p-4 lg:p-5 rounded-2xl",
+                "bg-card hover:bg-secondary/50",
+                "transition-all duration-200",
+                "group"
+              )}
             >
-              <LogOut className="h-5 w-5" />
-              Sign Out
-            </Button>
-          </nav>
-        </CardContent>
-      </Card>
+              <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                <item.icon className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{item.label}</p>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+            </Link>
+          ))}
+
+          {/* Sign Out */}
+          <button
+            onClick={() => {
+              logout();
+              router.push("/");
+            }}
+            className={cn(
+              "flex items-center gap-4 p-4 lg:p-5 rounded-2xl w-full",
+              "bg-card hover:bg-destructive/10",
+              "transition-all duration-200",
+              "group text-left"
+            )}
+          >
+            <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center shrink-0">
+              <LogOut className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-destructive">Sign Out</p>
+              <p className="text-sm text-muted-foreground">Log out of your account</p>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

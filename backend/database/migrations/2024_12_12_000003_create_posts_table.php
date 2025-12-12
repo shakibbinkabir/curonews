@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('slug', 255)->unique();
             $table->longText('content');
             $table->string('excerpt', 500)->nullable();
-            $table->string('image_original', 255);
+            $table->string('image_original', 255)->nullable();
             $table->string('image_processed', 255)->nullable();
             $table->enum('status', ['draft', 'pending', 'published', 'rejected'])->default('draft');
             $table->text('rejection_reason')->nullable();
@@ -37,7 +37,11 @@ return new class extends Migration
             $table->index('status');
             $table->index('published_at');
             $table->index('category_id');
-            $table->fullText(['title', 'content']);
+            
+            // Fulltext index only supported by MySQL/MariaDB
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                $table->fullText(['title', 'content']);
+            }
         });
     }
 

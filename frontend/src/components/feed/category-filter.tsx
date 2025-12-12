@@ -1,7 +1,6 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { useCategories } from '@/lib/hooks/use-categories';
 
 interface CategoryFilterProps {
@@ -14,11 +13,11 @@ export function CategoryFilter({ selectedCategory, onSelectCategory }: CategoryF
 
   if (isLoading) {
     return (
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="h-9 w-24 rounded-full bg-muted animate-pulse"
+            className="h-10 w-24 rounded-full skeleton shrink-0"
           />
         ))}
       </div>
@@ -26,29 +25,32 @@ export function CategoryFilter({ selectedCategory, onSelectCategory }: CategoryF
   }
 
   return (
-    <ScrollArea className="w-full whitespace-nowrap">
-      <div className="flex gap-2 pb-4">
-        <Button
-          variant={selectedCategory === null ? 'default' : 'outline'}
-          size="sm"
-          className="rounded-full"
-          onClick={() => onSelectCategory(null)}
+    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
+      <button
+        onClick={() => onSelectCategory(null)}
+        className={cn(
+          'shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200',
+          selectedCategory === null
+            ? 'bg-primary text-primary-foreground shadow-sm'
+            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+        )}
+      >
+        All
+      </button>
+      {categories?.map((category) => (
+        <button
+          key={category.id}
+          onClick={() => onSelectCategory(category.slug)}
+          className={cn(
+            'shrink-0 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200',
+            selectedCategory === category.slug
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+          )}
         >
-          All
-        </Button>
-        {categories?.map((category) => (
-          <Button
-            key={category.id}
-            variant={selectedCategory === category.slug ? 'default' : 'outline'}
-            size="sm"
-            className="rounded-full"
-            onClick={() => onSelectCategory(category.slug)}
-          >
-            {category.name}
-          </Button>
-        ))}
-      </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+          {category.name}
+        </button>
+      ))}
+    </div>
   );
 }

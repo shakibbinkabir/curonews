@@ -20,8 +20,12 @@ export async function getCurrentUser(): Promise<User> {
   return data.data;
 }
 
-export async function updateProfile(profileData: Partial<User>): Promise<User> {
-  const { data } = await apiClient.put('/auth/profile', profileData);
+export async function updateProfile(profileData: FormData | Partial<User>): Promise<User> {
+  const isFormData = profileData instanceof FormData;
+  const { data } = await apiClient.post('/auth/profile', profileData, {
+    headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined,
+    params: isFormData ? { _method: 'PUT' } : undefined,
+  });
   return data.data;
 }
 

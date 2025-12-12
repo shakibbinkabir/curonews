@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { AuthProvider } from "@/providers/auth-provider";
 import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
 import { AuthModal } from "@/components/auth/auth-modal";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-poppins",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -30,15 +27,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-      >
+      <body className={`${poppins.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <ThemeProvider>
           <QueryProvider>
             <AuthProvider>
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
+              <div className="min-h-screen flex flex-col">
+                <Suspense fallback={<div className="h-16 md:h-20" />}> 
+                  <Header />
+                </Suspense>
+                <main className="flex-1">{children}</main>
+              </div>
               <AuthModal />
             </AuthProvider>
           </QueryProvider>
