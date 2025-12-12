@@ -34,8 +34,8 @@ export interface Post {
   slug: string;
   excerpt: string | null;
   content: string | null;
-  image_original_url: string | null;
-  image_processed_url: string | null;
+  image_original: string | null;
+  image_processed: string | null;
   status: 'draft' | 'pending' | 'published' | 'rejected';
   source_name: string | null;
   source_url: string | null;
@@ -46,9 +46,9 @@ export interface Post {
   user_saved: boolean;
   published_at: string | null;
   created_at: string;
-  category: Category;
-  tags: Tag[];
-  sourcer: User;
+  category?: Category;
+  tags?: Tag[];
+  sourcer?: User;
 }
 
 // API Response types

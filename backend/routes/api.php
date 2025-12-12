@@ -17,6 +17,13 @@ use Illuminate\Support\Facades\Route;
 // Public routes
 Route::prefix('v1')->group(function () {
     
+    // API Info
+    Route::get('/', fn () => response()->json([
+        'name' => 'CuroNews API',
+        'version' => 'v1',
+        'status' => 'running',
+    ]));
+    
     // Auth routes
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/login', [AuthController::class, 'login']);

@@ -33,7 +33,7 @@ export function PostModal({ post, isOpen, onClose }: PostModalProps) {
     }
   };
 
-  const imageUrl = post.image_processed_url || post.image_original_url || '/placeholder.jpg';
+  const imageUrl = post.image_processed || post.image_original || '/placeholder.jpg';
   const publishedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -72,8 +72,8 @@ export function PostModal({ post, isOpen, onClose }: PostModalProps) {
               {/* Header */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge>{post.category.name}</Badge>
-                  {post.tags.map((tag) => (
+                  {post.category && <Badge>{post.category.name}</Badge>}
+                  {post.tags?.map((tag) => (
                     <Badge key={tag.id} variant="outline">
                       {tag.name}
                     </Badge>
@@ -149,11 +149,13 @@ export function PostModal({ post, isOpen, onClose }: PostModalProps) {
               )}
 
               {/* Author */}
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Curated by <span className="font-medium text-foreground">{post.sourcer.name}</span>
-                </p>
-              </div>
+              {post.sourcer && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Curated by <span className="font-medium text-foreground">{post.sourcer.name}</span>
+                  </p>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </div>

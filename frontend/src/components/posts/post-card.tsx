@@ -33,7 +33,7 @@ export function PostCard({ post }: PostCardProps) {
     }
   };
 
-  const imageUrl = post.image_processed_url || post.image_original_url || '/placeholder.jpg';
+  const imageUrl = post.image_processed || post.image_original || '/placeholder.jpg';
 
   return (
     <>
@@ -64,11 +64,13 @@ export function PostCard({ post }: PostCardProps) {
         />
 
         {/* Category Badge */}
-        <Badge
-          className="absolute top-4 left-4 bg-primary text-primary-foreground"
-        >
-          {post.category.name}
-        </Badge>
+        {post.category && (
+          <Badge
+            className="absolute top-4 left-4 bg-primary text-primary-foreground"
+          >
+            {post.category.name}
+          </Badge>
+        )}
 
         {/* Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6">
