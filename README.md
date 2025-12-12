@@ -82,7 +82,13 @@ Version 2 will transform CuroNews into a full social media platform:
 - [Non-Technical PRD](PRD/v1/Non_Technical.md) - Business requirements and user stories
 - [Technical PRD](PRD/v1/Technical.md) - Architecture, database schema, API specs
 
-## 👤 Creator
+## � License
+
+This project is **proprietary software**. All rights reserved.
+
+No part of this software may be used, copied, modified, or distributed without prior written permission from the copyright holder. See [LICENSE](LICENSE) for details.
+
+## �👤 Creator
 
 **Shakib Bin Kabir**
 
