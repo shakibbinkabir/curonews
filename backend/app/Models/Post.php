@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\ProcessPostImage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -73,6 +74,14 @@ class Post extends Model
         static::saving(function ($model) {
             if (empty($model->excerpt) && !empty($model->content)) {
                 $model->excerpt = Str::limit(strip_tags($model->content), 200);
+            }
+        });
+
+        // Dispatch image processing job when original image is uploaded
+        static::saved(function ($model) {
+            // Check if image_original was just set or changed
+            if ($model->wasChanged('image_original') && $model->image_original && !$model->image_processed) {
+                ProcessPostImage::dispatch($model);
             }
         });
     }

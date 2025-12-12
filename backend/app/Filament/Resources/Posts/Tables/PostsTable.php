@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Posts\Tables;
 
+use App\Jobs\ProcessPostImage;
 use App\Models\Post;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -10,9 +11,12 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
@@ -27,6 +31,12 @@ class PostsTable
                     ->disk('public')
                     ->square()
                     ->size(60),
+
+                IconColumn::make('image_processed')
+                    ->label('9:16')
+                    ->icon(fn ($state) => $state ? 'heroicon-o-check-circle' : 'heroicon-o-clock')
+                    ->color(fn ($state) => $state ? 'success' : 'warning')
+                    ->tooltip(fn ($state) => $state ? 'Processed' : 'Processing...'),
 
                 TextColumn::make('title')
                     ->searchable()
@@ -87,10 +97,30 @@ class PostsTable
 
                 SelectFilter::make('category')
                     ->relationship('category', 'name'),
+
+                TernaryFilter::make('image_processed')
+                    ->label('Image Status')
+                    ->placeholder('All')
+                    ->trueLabel('Processed')
+                    ->falseLabel('Pending'),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                Action::make('reprocess_image')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->label('Reprocess')
+                    ->requiresConfirmation()
+                    ->visible(fn (Post $record) => $record->image_original && Auth::user()?->isAdmin())
+                    ->action(function (Post $record) {
+                        $record->update(['image_processed' => null]);
+                        ProcessPostImage::dispatch($record);
+                        Notification::make()
+                            ->title('Image queued for reprocessing')
+                            ->success()
+                            ->send();
+                    }),
                 Action::make('approve')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')

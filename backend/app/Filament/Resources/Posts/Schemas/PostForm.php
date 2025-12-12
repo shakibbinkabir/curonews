@@ -137,15 +137,28 @@ class PostForm
                             ->schema([
                                 FileUpload::make('image_original')
                                     ->image()
-                                    ->required()
                                     ->disk('public')
                                     ->directory('posts/original')
-                                    ->imageResizeMode('cover')
-                                    ->imageResizeTargetWidth(1920)
-                                    ->imageResizeTargetHeight(1920)
+                                    ->visibility('public')
+                                    ->imageResizeMode('contain')
+                                    ->imageResizeTargetWidth(2000)
+                                    ->imageResizeTargetHeight(2000)
                                     ->maxSize(10240) // 10MB
                                     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                                    ->label('Original Image'),
+                                    ->label('Original Image')
+                                    ->helperText('Upload image (min 400x400px). A 9:16 processed version will be generated automatically.'),
+
+                                Placeholder::make('image_processed_preview')
+                                    ->label('Processed Image (9:16)')
+                                    ->content(function ($record) {
+                                        if (!$record?->image_processed) {
+                                            return 'Processing... (refresh page after a few seconds)';
+                                        }
+                                        return new \Illuminate\Support\HtmlString(
+                                            '<img src="' . $record->image_processed_url . '" class="max-w-xs rounded shadow" />'
+                                        );
+                                    })
+                                    ->visible(fn ($record) => $record?->image_original),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1]),
