@@ -1,0 +1,2612 @@
+# CuroNews - Technical Product Requirements Document
+
+**Version:** 1.0  
+**Status:** Draft  
+**Date:** December 12, 2025  
+**Document Type:** Engineering & Development PRD
+
+---
+
+## 1. Technical Overview
+
+### 1.1 Architecture Summary
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         SYSTEM ARCHITECTURE                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+                     ┌───────────────────────┐
+                     │   cPanel Shared       │
+                     │   Web Hosting         │
+                     │   (BDIX Advance)      │
+                     └───────────┬───────────┘
+                                 │
+              ┌──────────────────┼──────────────────┐
+              │                  │                  │
+       ┌──────▼──────┐    ┌──────▼──────┐    ┌──────▼──────┐
+       │   Next.js   │    │   Laravel   │    │  Filament   │
+       │   14+ App   │    │     11      │    │    PHP      │
+       │   (Static   │    │   (API)     │    │  (Admin)    │
+       │   Export)   │    │             │    │             │
+       └──────┬──────┘    └──────┬──────┘    └─────────────┘
+              │                  │
+    ┌─────────┼─────────┐        │
+    │         │         │        │
+┌───▼───┐ ┌───▼───┐ ┌───▼───┐    │
+│Tanstack│ │ Auth  │ │Tailwind│   │
+│ Query │ │Sanctum│ │+Shadcn│    │
+└───────┘ └───┬───┘ └───────┘    │
+              │                  │
+              └────────┬─────────┘
+                       │
+              ┌────────▼────────┐
+              │     MySQL       │
+              │   (Unlimited    │
+              │   Databases)    │
+              └────────┬────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+  ┌─────▼─────┐ ┌──────▼──────┐ ┌─────▼─────┐
+  │ Telegram  │ │  Local File │ │   Image   │
+  │   Bot     │ │  Storage /  │ │ Processing│
+  │   API     │ │ Cloudinary  │ │(Intervention)
+  └───────────┘ └─────────────┘ └───────────┘
+```
+
+### 1.2 Hosting Specifications (cPanel BDIX Advance)
+
+| Resource | Specification |
+|----------|---------------|
+| **Disk Space** | 10GB NVMe SSD (4GB available) |
+| **Bandwidth** | 520GB/month Managed |
+| **RAM** | 2GB Managed |
+| **CPU** | 2 Core (150% Limit) |
+| **I/O** | 30 Mbps |
+| **Entry Processes** | 35 |
+| **Total Processes** | 120 |
+| **MySQL Databases** | Unlimited |
+| **Addon Domains** | Unlimited |
+| **Subdomains** | Unlimited |
+| **Email Accounts** | Unlimited |
+| **SSL** | Free Lifetime SSL |
+| **SSH Access** | Yes |
+| **Node.js Support** | Yes |
+| **Backup** | Up to 7 Days Daily |
+
+### 1.3 Tech Stack Specification
+
+| Layer | Technology | Version | Justification |
+|-------|------------|---------|---------------|
+| **Hosting** | cPanel Shared | BDIX Advance | Cost-effective, SSH access, Node.js support |
+| **Frontend Framework** | Next.js | 14+ | App Router, Static Export for cPanel |
+| **Styling** | Tailwind CSS | 3.4+ | Utility-first, Shadcn compatibility |
+| **Component Library** | Shadcn/UI | Latest | Accessible, customizable, modern |
+| **State Management** | TanStack Query | 5+ | Server state, caching, mutations |
+| **Backend Framework** | Laravel | 11 | Robust, Filament support |
+| **Admin Panel** | Filament PHP | 3+ | Rapid admin development |
+| **Database** | MySQL | 8+ | Unlimited databases on cPanel |
+| **Queue** | Database Driver | - | No Redis needed, uses MySQL |
+| **Image Processing** | Intervention Image | 3+ | Laravel integration |
+| **File Storage** | Local/Cloudinary | - | Local storage or Cloudinary for CDN |
+
+---
+
+## 2. Database Schema
+
+### 2.1 Entity Relationship Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    DATABASE SCHEMA (ERD)                            │
+└─────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+  │    users     │         │    posts     │         │  categories  │
+  ├──────────────┤         ├──────────────┤         ├──────────────┤
+  │ id           │◄───┐    │ id           │    ┌───►│ id           │
+  │ uuid         │    │    │ uuid         │    │    │ name         │
+  │ name         │    │    │ sourcer_id   │────┘    │ slug         │
+  │ email        │    │    │ admin_id     │────┐    │ description  │
+  │ password     │    │    │ category_id  │────┼───►│ timestamps   │
+  │ role         │    │    │ title        │    │    └──────────────┘
+  │ avatar       │    │    │ slug         │    │
+  │ timestamps   │    │    │ content      │    │
+  └──────────────┘    │    │ excerpt      │    │
+         ▲            │    │ image_original│   │
+         │            │    │ image_processed│  │
+         │            └────│ status       │    │
+         │                 │ source_name  │    │
+         │                 │ source_url   │    │
+         │                 │ published_at │    │
+         │                 │ timestamps   │    │
+         │                 └──────┬───────┘    │
+         │                        │            │
+         │            ┌───────────┴───────┐    │
+         │            ▼                   ▼    │
+  ┌──────┴───────┐  ┌──────────────┐  ┌───────┴────┐
+  │ interactions │  │   post_tag   │  │    tags    │
+  ├──────────────┤  ├──────────────┤  ├────────────┤
+  │ id           │  │ post_id      │  │ id         │
+  │ user_id      │  │ tag_id       │  │ name       │
+  │ post_id      │  └──────────────┘  │ slug       │
+  │ type         │                    │ timestamps │
+  │ timestamps   │                    └────────────┘
+  └──────────────┘
+```
+
+### 2.2 Table Definitions
+
+#### `users` Table
+
+```sql
+CREATE TABLE users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(36) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    email_verified_at TIMESTAMP NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('guest', 'user', 'sourcer', 'admin') DEFAULT 'user',
+    avatar VARCHAR(255) NULL,
+    telegram_chat_id VARCHAR(255) NULL,
+    remember_token VARCHAR(100) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_role (role),
+    INDEX idx_email (email)
+);
+```
+
+#### `posts` Table
+
+```sql
+CREATE TABLE posts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uuid CHAR(36) UNIQUE NOT NULL,
+    sourcer_id BIGINT UNSIGNED NOT NULL,
+    admin_id BIGINT UNSIGNED NULL,
+    category_id BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    content TEXT NOT NULL,
+    excerpt VARCHAR(500) NULL,
+    image_original VARCHAR(255) NOT NULL,
+    image_processed VARCHAR(255) NULL,
+    status ENUM('draft', 'pending', 'published', 'rejected') DEFAULT 'draft',
+    rejection_reason TEXT NULL,
+    source_name VARCHAR(255) NULL,
+    source_url VARCHAR(500) NULL,
+    meta_title VARCHAR(255) NULL,
+    meta_description VARCHAR(500) NULL,
+    view_count INT UNSIGNED DEFAULT 0,
+    published_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (sourcer_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT,
+    
+    INDEX idx_status (status),
+    INDEX idx_published_at (published_at),
+    INDEX idx_category (category_id),
+    FULLTEXT INDEX idx_search (title, content)
+);
+```
+
+#### `categories` Table
+
+```sql
+CREATE TABLE categories (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT NULL,
+    color VARCHAR(7) NULL,  -- Hex color code
+    icon VARCHAR(50) NULL,  -- Icon identifier
+    sort_order INT DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_slug (slug),
+    INDEX idx_active (is_active)
+);
+```
+
+#### `tags` Table
+
+```sql
+CREATE TABLE tags (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    INDEX idx_slug (slug)
+);
+```
+
+#### `post_tag` Pivot Table
+
+```sql
+CREATE TABLE post_tag (
+    post_id BIGINT UNSIGNED NOT NULL,
+    tag_id BIGINT UNSIGNED NOT NULL,
+    
+    PRIMARY KEY (post_id, tag_id),
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+```
+
+#### `interactions` Table
+
+```sql
+CREATE TABLE interactions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    post_id BIGINT UNSIGNED NOT NULL,
+    type ENUM('like', 'save') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE KEY unique_interaction (user_id, post_id, type),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    
+    INDEX idx_user_type (user_id, type),
+    INDEX idx_post_type (post_id, type)
+);
+```
+
+---
+
+## 3. API Specification
+
+### 3.1 Authentication Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/api/auth/register` | Register new user | No |
+| `POST` | `/api/auth/login` | User login | No |
+| `POST` | `/api/auth/logout` | User logout | Yes |
+| `GET` | `/api/auth/user` | Get current user | Yes |
+| `POST` | `/api/auth/refresh` | Refresh token | Yes |
+
+### 3.2 Posts Endpoints
+
+| Method | Endpoint | Description | Auth | Role |
+|--------|----------|-------------|------|------|
+| `GET` | `/api/posts` | List published posts | No | - |
+| `GET` | `/api/posts/{uuid}` | Get single post | No | - |
+| `POST` | `/api/posts` | Create draft post | Yes | Sourcer+ |
+| `PUT` | `/api/posts/{uuid}` | Update post | Yes | Admin |
+| `DELETE` | `/api/posts/{uuid}` | Delete post | Yes | Admin |
+| `PATCH` | `/api/posts/{uuid}/status` | Change status | Yes | Admin |
+
+#### GET `/api/posts` - List Posts
+
+**Query Parameters:**
+```typescript
+interface PostListParams {
+  page?:  number;           // Default: 1
+  per_page?: number;       // Default: 20, Max: 100
+  category?:  string;       // Category slug
+  tag?: string;            // Tag slug
+  search?: string;         // Search query
+  status?: 'published';    // Only published for public
+  sort_by?: 'published_at' | 'view_count' | 'likes_count';
+  sort_order?: 'asc' | 'desc';
+}
+```
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "uuid": "550e8400-e29b-41d4-a716-446655440000",
+      "title": "New Study Reveals.. .",
+      "slug": "new-study-reveals",
+      "excerpt": "Scientists have discovered.. .",
+      "image_processed": "https://cdn.curonews.com/images/processed/abc123.jpg",
+      "category":  {
+        "name": "Research",
+        "slug": "research",
+        "color":  "#3B82F6"
+      },
+      "tags": ["cardiovascular", "study"],
+      "source_name": "Johns Hopkins",
+      "published_at": "2025-12-12T10:00:00Z",
+      "likes_count": 42,
+      "saves_count": 15,
+      "user_liked": false,
+      "user_saved": false
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 10,
+    "per_page": 20,
+    "total":  195
+  }
+}
+```
+
+#### GET `/api/posts/{uuid}` - Single Post
+
+**Response:**
+```json
+{
+  "data":  {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "New Study Reveals...",
+    "slug":  "new-study-reveals",
+    "content": "<p>Full article content in HTML... </p>",
+    "excerpt": "Scientists have discovered...",
+    "image_original": "https://cdn.curonews. com/images/original/abc123.jpg",
+    "image_processed": "https://cdn.curonews.com/images/processed/abc123.jpg",
+    "category": {
+      "name": "Research",
+      "slug": "research",
+      "color":  "#3B82F6"
+    },
+    "tags":  [
+      {"name": "Cardiovascular", "slug": "cardiovascular"},
+      {"name":  "Study", "slug": "study"}
+    ],
+    "source_name": "Johns Hopkins",
+    "source_url": "https://source.example.com/article",
+    "published_at": "2025-12-12T10:00:00Z",
+    "likes_count":  42,
+    "saves_count":  15,
+    "view_count": 1250,
+    "user_liked": true,
+    "user_saved": false
+  }
+}
+```
+
+### 3.3 Interactions Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/api/posts/{uuid}/like` | Toggle like | Yes |
+| `POST` | `/api/posts/{uuid}/save` | Toggle save | Yes |
+| `GET` | `/api/user/likes` | Get user's liked posts | Yes |
+| `GET` | `/api/user/saves` | Get user's saved posts | Yes |
+
+### 3.4 Categories & Tags Endpoints
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `GET` | `/api/categories` | List all categories | No |
+| `GET` | `/api/tags` | List popular tags | No |
+| `GET` | `/api/tags/search` | Search tags | No |
+
+### 3.5 Telegram Webhook Endpoint
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| `POST` | `/api/telegram/webhook` | Handle Telegram callbacks | Telegram Token |
+
+---
+
+## 4. Image Processing System
+
+### 4.1 Processing Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    IMAGE PROCESSING PIPELINE                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────┐
+    │   Original   │
+    │    Image     │
+    │  (Any Size)  │
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────┐
+    │   Validate   │
+    │  • Format    │
+    │  • Size      │
+    │  • Dimensions│
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────┐
+    │   Upload to  │
+    │   S3/CDN     │
+    │  (Original)  │
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────┐
+    │ Dispatch Job │
+    │  to Redis    │
+    │    Queue     │
+    └──────┬───────┘
+           │
+           ▼
+    ┌──────────────────────────────────────────────────┐
+    │               PROCESSING JOB                      │
+    ├──────────────────────────────────────────────────┤
+    │  1. Create 9: 16 canvas (1080 x 1920 px)          │
+    │                                                   │
+    │  2. Layer 1 - Background:                         │
+    │     • Load original image                        │
+    │     • Resize to COVER canvas                     │
+    │     • Apply Gaussian blur (radius:  40px)         │
+    │     • Reduce opacity to 80%                      │
+    │                                                   │
+    │  3. Layer 2 - Foreground:                        │
+    │     • Load original image                        │
+    │     • Resize to CONTAIN within canvas            │
+    │     • Center on canvas                           │
+    │                                                   │
+    │  4. Composite layers                             │
+    │                                                   │
+    │  5. Optimize (WebP, quality:  85)                 │
+    │                                                   │
+    │  6. Upload processed image to S3/CDN             │
+    │                                                   │
+    │  7. Update post record with processed URL        │
+    └──────────────────────────────────────────────────┘
+```
+
+### 4.2 Laravel Job Implementation
+
+```php
+<?php
+
+namespace App\Jobs;
+
+use App\Models\Post;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Imagick\Driver;
+use Illuminate\Support\Facades\Storage;
+
+class ProcessPostImage implements ShouldQueue
+{
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public int $tries = 3;
+    public int $backoff = 60;
+
+    public function __construct(
+        private Post $post
+    ) {}
+
+    public function handle(): void
+    {
+        $manager = new ImageManager(new Driver());
+        
+        // Target dimensions (9:16 ratio)
+        $targetWidth = 1080;
+        $targetHeight = 1920;
+        
+        // Load original image
+        $originalPath = Storage::disk('s3')->path($this->post->image_original);
+        $original = $manager->read($originalPath);
+        
+        // Create canvas
+        $canvas = $manager->create($targetWidth, $targetHeight)
+            ->fill('#1a1a1a');
+        
+        // Layer 1: Blurred background
+        $background = clone $original;
+        $background->cover($targetWidth, $targetHeight)
+            ->blur(40)
+            ->brightness(-20);
+        
+        $canvas->place($background, 'center');
+        
+        // Layer 2: Original image (contained)
+        $foreground = clone $original;
+        $foreground->scaleDown($targetWidth, $targetHeight);
+        
+        $canvas->place($foreground, 'center');
+        
+        // Encode as WebP
+        $encoded = $canvas->toWebp(85);
+        
+        // Generate filename
+        $filename = 'processed/' . $this->post->uuid . '. webp';
+        
+        // Upload to S3
+        Storage::disk('s3')->put($filename, $encoded);
+        
+        // Update post
+        $this->post->update([
+            'image_processed' => $filename
+        ]);
+    }
+}
+```
+
+### 4.3 Image Validation Rules
+
+```php
+// config/curonews.php
+return [
+    'images' => [
+        'max_size' => 10 * 1024 * 1024, // 10MB
+        'min_dimensions' => [
+            'width' => 400,
+            'height' => 400,
+        ],
+        'max_dimensions' => [
+            'width' => 8000,
+            'height' => 8000,
+        ],
+        'allowed_mimes' => ['image/jpeg', 'image/png', 'image/webp'],
+        'processed' => [
+            'width' => 1080,
+            'height' => 1920,
+            'format' => 'webp',
+            'quality' => 85,
+        ],
+    ],
+];
+```
+
+---
+
+## 5. Telegram Bot Integration
+
+### 5.1 Bot Setup
+
+```php
+// config/services.php
+return [
+    'telegram' => [
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'admin_group_id' => env('TELEGRAM_ADMIN_GROUP_ID'),
+        'webhook_url' => env('APP_URL') . '/api/telegram/webhook',
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
+    ],
+];
+```
+
+### 5.2 Event Flow
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    TELEGRAM NOTIFICATION FLOW                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+  Sourcer submits post
+          │
+          ▼
+  ┌───────────────────┐
+  │  PostSubmitted    │
+  │     Event         │
+  └─────────┬─────────┘
+            │
+            ▼
+  ┌───────────────────┐
+  │ SendTelegramNotif │
+  │    Listener       │
+  └─────────┬─────────┘
+            │
+            ▼
+  ┌───────────────────┐
+  │ TelegramNotification │
+  │      Job (Queue)     │
+  └─────────┬─────────┘
+            │
+            ▼
+  ┌───────────────────┐
+  │   Telegram API    │
+  │  sendPhoto with   │
+  │  inline_keyboard  │
+  └─────────┬─────────┘
+            │
+            ▼
+  ┌───────────────────────────────────────┐
+  │         ADMIN TELEGRAM GROUP          │
+  │                                       │
+  │  📰 NEW ARTICLE FOR REVIEW            │
+  │  ─────────────────────────────────    │
+  │  [Image Preview]                      │
+  │                                       │
+  │  📝 Title: {title}                    │
+  │  👤 Sourcer: {sourcer_name}           │
+  │  📁 Category: {category}              │
+  │                                       │
+  │  {excerpt_200_chars}...                │
+  │                                       │
+  │  ┌─────────┐┌─────────┐┌─────────┐    │
+  │  │✅Approve││❌Reject ││✏️ Edit  │    │
+  │  └─────────┘└─────────┘└─────────┘    │
+  └───────────────────────────────────────┘
+            │
+            │ Admin clicks button
+            ▼
+  ┌───────────────────┐
+  │ Telegram Webhook  │
+  │   /api/telegram   │
+  │     /webhook      │
+  └─────────┬─────────┘
+            │
+            ├─────────────────────────────────────┐
+            │                                     │
+   ┌────────▼────────┐               ┌────────────▼───────────┐
+   │ Approve/Reject  │               │    Edit & Publish      │
+   │ Update status   │               │ Generate magic link    │
+   │ directly        │               │ Admin opens dashboard  │
+   └────────┬────────┘               └────────────┬───────────┘
+            │                                     │
+            ▼                                     ▼
+   ┌─────────────────┐               ┌─────────────────────────┐
+   │ Edit Telegram   │               │ Redirect to Filament    │
+   │ message to show │               │ /admin/posts/{id}/edit  │
+   │ "✅ Approved by │               │ with auth token         │
+   │  @admin"        │               └─────────────────────────┘
+   └─────────────────┘
+```
+
+### 5.3 Telegram Service Class
+
+```php
+<?php
+
+namespace App\Services;
+
+use App\Models\Post;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
+
+class TelegramService
+{
+    private string $apiUrl;
+    private string $botToken;
+    private string $adminGroupId;
+
+    public function __construct()
+    {
+        $this->botToken = config('services.telegram. bot_token');
+        $this->apiUrl = "https://api.telegram.org/bot{$this->botToken}";
+        $this->adminGroupId = config('services.telegram.admin_group_id');
+    }
+
+    public function sendPostForReview(Post $post): bool
+    {
+        $caption = $this->buildCaption($post);
+        $keyboard = $this->buildInlineKeyboard($post);
+
+        $response = Http::post("{$this->apiUrl}/sendPhoto", [
+            'chat_id' => $this->adminGroupId,
+            'photo' => $post->image_original_url,
+            'caption' => $caption,
+            'parse_mode' => 'HTML',
+            'reply_markup' => json_encode([
+                'inline_keyboard' => $keyboard
+            ])
+        ]);
+
+        if ($response->successful()) {
+            $post->update([
+                'telegram_message_id' => $response->json('result.message_id')
+            ]);
+            return true;
+        }
+
+        return false;
+    }
+
+    private function buildCaption(Post $post): string
+    {
+        $excerpt = Str::limit(strip_tags($post->content), 200);
+        
+        return <<<HTML
+📰 <b>NEW ARTICLE FOR REVIEW</b>
+
+<b>📝 Title:</b> {$post->title}
+<b>👤 Sourcer: </b> {$post->sourcer->name}
+<b>📁 Category:</b> {$post->category->name}
+
+{$excerpt}
+HTML;
+    }
+
+    private function buildInlineKeyboard(Post $post): array
+    {
+        $editUrl = URL::temporarySignedRoute(
+            'admin.posts.edit',
+            now()->addHours(24),
+            ['post' => $post->uuid]
+        );
+
+        return [
+            [
+                ['text' => '✅ Approve', 'callback_data' => "approve:{$post->uuid}"],
+                ['text' => '❌ Reject', 'callback_data' => "reject:{$post->uuid}"],
+                ['text' => '✏️ Edit & Publish', 'url' => $editUrl],
+            ]
+        ];
+    }
+
+    public function handleCallback(array $callbackQuery): void
+    {
+        $data = $callbackQuery['data'];
+        $messageId = $callbackQuery['message']['message_id'];
+        $user = $callbackQuery['from'];
+
+        [$action, $postUuid] = explode(':', $data);
+        
+        $post = Post::where('uuid', $postUuid)->firstOrFail();
+        $admin = $this->findOrCreateAdmin($user);
+
+        match ($action) {
+            'approve' => $this->approvePost($post, $admin, $messageId),
+            'reject' => $this->rejectPost($post, $admin, $messageId),
+            default => null,
+        };
+    }
+
+    private function approvePost(Post $post, $admin, int $messageId): void
+    {
+        $post->update([
+            'status' => 'published',
+            'admin_id' => $admin->id,
+            'published_at' => now(),
+        ]);
+
+        $this->updateMessage($messageId, "✅ Approved by @{$admin->name}");
+        $this->answerCallback("Post approved and published!");
+    }
+
+    private function rejectPost(Post $post, $admin, int $messageId): void
+    {
+        $post->update([
+            'status' => 'rejected',
+            'admin_id' => $admin->id,
+        ]);
+
+        $this->updateMessage($messageId, "❌ Rejected by @{$admin->name}");
+        $this->answerCallback("Post rejected.");
+    }
+}
+```
+
+### 5.4 Webhook Controller
+
+```php
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Services\TelegramService;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+
+class TelegramWebhookController extends Controller
+{
+    public function __construct(
+        private TelegramService $telegram
+    ) {}
+
+    public function handle(Request $request): JsonResponse
+    {
+        // Verify webhook secret
+        $secretToken = $request->header('X-Telegram-Bot-Api-Secret-Token');
+        
+        if ($secretToken !== config('services.telegram.webhook_secret')) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $update = $request->all();
+
+        if (isset($update['callback_query'])) {
+            $this->telegram->handleCallback($update['callback_query']);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+}
+```
+
+---
+
+## 6. Frontend Architecture
+
+### 6.1 Project Structure
+
+```
+curonews-frontend/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/
+│   │   │   └── page.tsx
+│   │   └── register/
+│   │       └── page.tsx
+│   ├── (main)/
+│   │   ├── layout.tsx
+│   │   ├── page.tsx                 # Home feed
+│   │   ├── category/
+│   │   │   └── [slug]/
+│   │   │       └── page. tsx
+│   │   ├── search/
+│   │   │   └── page.tsx
+│   │   └── profile/
+│   │       ├── page.tsx
+│   │       ├── likes/
+│   │       │   └── page.tsx
+│   │       └── saved/
+│   │           └── page. tsx
+│   ├── api/
+│   │   └── auth/
+│   │       └── [... nextauth]/
+│   │           └── route.ts
+│   ├── layout.tsx
+│   └── globals.css
+├── components/
+│   ├── ui/                          # Shadcn components
+│   │   ├── button. tsx
+│   │   ├── card.tsx
+│   │   ├── dialog.tsx
+│   │   └── ... 
+│   ├── layout/
+│   │   ├── header.tsx
+│   │   ├── footer.tsx
+│   │   ├── navigation.tsx
+│   │   └── theme-toggle.tsx
+│   ├── posts/
+│   │   ├── post-card.tsx
+│   │   ├── post-grid.tsx
+│   │   ├── post-modal.tsx
+│   │   ├── post-interactions.tsx
+│   │   └── post-skeleton.tsx
+│   ├── feed/
+│   │   ├── feed-container.tsx
+│   │   ├── feed-filters.tsx
+│   │   └── infinite-scroll.tsx
+│   └── auth/
+│       ├── login-form.tsx
+│       ├── register-form.tsx
+│       └── auth-guard.tsx
+├── lib/
+│   ├── api/
+│   │   ├── client.ts                # Axios/fetch wrapper
+│   │   ├── posts.ts
+│   │   ├── auth.ts
+│   │   └── interactions.ts
+│   ├── hooks/
+│   │   ├── use-posts.ts
+│   │   ├── use-auth.ts
+│   │   ├── use-interactions.ts
+│   │   └── use-infinite-scroll.ts
+│   ├── utils/
+│   │   ├── cn.ts                    # className utility
+│   │   └── formatters.ts
+│   └── types/
+│       ├── post.ts
+│       ├── user. ts
+│       └── api.ts
+├── providers/
+│   ├── query-provider.tsx
+│   ├── auth-provider.tsx
+│   └── theme-provider.tsx
+├── styles/
+│   └── themes. css
+├── public/
+│   └── ... 
+├── tailwind.config.ts
+├── next.config.js
+└── package.json
+```
+
+### 6.2 Key Components
+
+#### PostCard Component
+
+```tsx
+// components/posts/post-card. tsx
+'use client';
+
+import { useState } from 'react';
+import Image from 'next/image';
+import { Heart, Bookmark } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
+import { Post } from '@/lib/types/post';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { useInteractions } from '@/lib/hooks/use-interactions';
+import { PostModal } from './post-modal';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+
+interface PostCardProps {
+  post: Post;
+}
+
+export function PostCard({ post }: PostCardProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user, openLoginModal } = useAuth();
+  const { toggleLike, toggleSave, isLiking, isSaving } = useInteractions(post. uuid);
+
+  const handleInteraction = (action: 'like' | 'save') => {
+    if (! user) {
+      openLoginModal();
+      return;
+    }
+    action === 'like' ? toggleLike() : toggleSave();
+  };
+
+  return (
+    <>
+      <article
+        className={cn(
+          'group relative aspect-[9/16] overflow-hidden rounded-3xl',
+          'bg-neutral-100 dark:bg-neutral-900',
+          'cursor-pointer transition-transform duration-300',
+          'hover:scale-[1.02] hover:shadow-xl'
+        )}
+        onClick={() => setIsModalOpen(true)}
+      >
+        {/* Image */}
+        <Image
+          src={post.image_processed}
+          alt={post.title}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+        />
+
+        {/* Gradient Overlay */}
+        <div
+          className={cn(
+            'absolute inset-0',
+            'bg-gradient-to-t from-black/80 via-black/20 to-transparent'
+          )}
+        />
+
+        {/* Category Badge */}
+        <Badge
+          className="absolute top-4 left-4"
+          style={{ backgroundColor: post.category.color }}
+        >
+          {post.category.name}
+        </Badge>
+
+        {/* Content Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <h3 className="text-white font-semibold text-lg leading-tight mb-4">
+            {post.title}
+          </h3>
+
+          {/* Interaction Buttons */}
+          <div
+            className="flex items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'text-white hover:bg-white/20',
+                post.user_liked && 'text-red-500'
+              )}
+              onClick={() => handleInteraction('like')}
+              disabled={isLiking}
+            >
+              <Heart
+                className={cn('w-5 h-5 mr-1', post.user_liked && 'fill-current')}
+              />
+              {post. likes_count}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                'text-white hover:bg-white/20',
+                post.user_saved && 'text-yellow-500'
+              )}
+              onClick={() => handleInteraction('save')}
+              disabled={isSaving}
+            >
+              <Bookmark
+                className={cn('w-5 h-5', post.user_saved && 'fill-current')}
+              />
+            </Button>
+          </div>
+        </div>
+      </article>
+
+      <PostModal
+        post={post}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
+  );
+}
+```
+
+#### Post Grid (Bento Layout)
+
+```tsx
+// components/posts/post-grid.tsx
+'use client';
+
+import { Post } from '@/lib/types/post';
+import { PostCard } from './post-card';
+import { PostSkeleton } from './post-skeleton';
+import { cn } from '@/lib/utils/cn';
+
+interface PostGridProps {
+  posts: Post[];
+  isLoading?:  boolean;
+}
+
+export function PostGrid({ posts, isLoading }: PostGridProps) {
+  if (isLoading) {
+    return (
+      <div className={cn(
+        'grid gap-6',
+        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+      )}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <PostSkeleton key={i} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        'grid gap-6',
+        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl: grid-cols-4',
+        'auto-rows-auto'
+      )}
+    >
+      {posts.map((post) => (
+        <PostCard key={post.uuid} post={post} />
+      ))}
+    </div>
+  );
+}
+```
+
+### 6.3 Design Tokens
+
+```css
+/* styles/themes.css */
+
+: root {
+  /* Colors - Light Mode */
+  --background:  0 0% 96. 1%;          /* #F5F5F7 */
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --primary: 221. 2 83.2% 53.3%;      /* Blue accent */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96.1%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96.1%;
+  --muted-foreground: 0 0% 45.1%;
+  --accent: 0 0% 96.1%;
+  --accent-foreground: 0 0% 9%;
+  --destructive:  0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 89.8%;
+  --input: 0 0% 89.8%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 1. 5rem;                   /* 24px rounded corners */
+}
+
+. dark {
+  /* Colors - Dark Mode */
+  --background: 0 0% 7.1%;           /* #121212 */
+  --foreground: 0 0% 98%;
+  --card:  0 0% 11%;
+  --card-foreground: 0 0% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 0 0% 9%;
+  --secondary: 0 0% 14.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 0 0% 14.9%;
+  --muted-foreground: 0 0% 63.9%;
+  --accent: 0 0% 14.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground:  0 0% 98%;
+  --border: 0 0% 14.9%;
+  --input: 0 0% 14.9%;
+  --ring: 217.2 91.2% 59.8%;
+}
+```
+
+---
+
+## 7. Filament Admin Configuration
+
+### 7.1 PostResource
+
+```php
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Filament\Resources\PostResource\Pages;
+use App\Models\Post;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class PostResource extends Resource
+{
+    protected static ?string $model = Post::class;
+    protected static ?string $navigationIcon = 'heroicon-o-newspaper';
+    protected static ?string $navigationGroup = 'Content';
+    protected static ?int $navigationSort = 1;
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Content')
+                    ->schema([
+                        Forms\Components\TextInput::make('title')
+                            ->required()
+                            ->maxLength(255)
+                            ->live(onBlur: true)
+                            ->afterStateUpdated(fn ($state, $set) => 
+                                $set('slug', Str::slug($state))
+                            ),
+                        
+                        Forms\Components\TextInput::make('slug')
+                            ->required()
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
+                        
+                        Forms\Components\Select::make('category_id')
+                            ->relationship('category', 'name')
+                            ->required()
+                            ->searchable()
+                            ->preload(),
+                        
+                        Forms\Components\Select::make('tags')
+                            ->relationship('tags', 'name')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->createOptionForm([
+                                Forms\Components\TextInput::make('name')
+                                    ->required(),
+                            ]),
+                        
+                        Forms\Components\RichEditor::make('content')
+                            ->required()
+                            ->columnSpanFull(),
+                        
+                        Forms\Components\Textarea::make('excerpt')
+                            ->maxLength(500)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Media')
+                    ->schema([
+                        Forms\Components\FileUpload::make('image_original')
+                            ->image()
+                            ->required()
+                            ->directory('posts/original')
+                            ->visibility('public')
+                            ->imageResizeMode('contain')
+                            ->imageCropAspectRatio(null)
+                            ->maxSize(10240) // 10MB
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp']),
+                    ]),
+
+                Forms\Components\Section::make('Source')
+                    ->schema([
+                        Forms\Components\TextInput::make('source_name')
+                            ->maxLength(255),
+                        
+                        Forms\Components\TextInput::make('source_url')
+                            ->url()
+                            ->maxLength(500),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Status')
+                    ->schema([
+                        Forms\Components\Select::make('status')
+                            ->options([
+                                'draft' => 'Draft',
+                                'pending' => 'Pending Review',
+                                'published' => 'Published',
+                                'rejected' => 'Rejected',
+                            ])
+                            ->required()
+                            ->default('draft')
+                            ->visible(fn () => auth()->user()->isAdmin()),
+                        
+                        Forms\Components\DateTimePicker::make('published_at')
+                            ->visible(fn () => auth()->user()->isAdmin()),
+                        
+                        Forms\Components\Textarea::make('rejection_reason')
+                            ->visible(fn ($get) => $get('status') === 'rejected'),
+                    ])
+                    ->columns(2),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\ImageColumn::make('image_processed')
+                    ->label('Image')
+                    ->circular(false)
+                    ->height(80),
+                
+                Tables\Columns\TextColumn::make('title')
+                    ->searchable()
+                    ->limit(40),
+                
+                Tables\Columns\TextColumn::make('category. name')
+                    ->badge()
+                    ->color(fn ($record) => $record->category->color ??  'gray'),
+                
+                Tables\Columns\TextColumn::make('sourcer. name')
+                    ->label('Sourcer'),
+                
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'gray' => 'draft',
+                        'warning' => 'pending',
+                        'success' => 'published',
+                        'danger' => 'rejected',
+                    ]),
+                
+                Tables\Columns\TextColumn::make('published_at')
+                    ->dateTime()
+                    ->sortable(),
+                
+                Tables\Columns\TextColumn::make('likes_count')
+                    ->label('❤️')
+                    ->counts('likes'),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'pending' => 'Pending',
+                        'published' => 'Published',
+                        'rejected' => 'Rejected',
+                    ]),
+                
+                Tables\Filters\SelectFilter::make('category')
+                           ->relationship('category', 'name'),
+                
+                Tables\Filters\Filter::make('published_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('published_from'),
+                        Forms\Components\DatePicker::make('published_until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['published_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('published_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['published_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('published_at', '<=', $date),
+                            );
+                    }),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('approve')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->status === 'pending')
+                    ->requiresConfirmation()
+                    ->action(fn ($record) => $record->approve(auth()->user())),
+                
+                Tables\Actions\Action::make('reject')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->status === 'pending')
+                    ->form([
+                        Forms\Components\Textarea::make('rejection_reason')
+                            ->label('Reason for rejection')
+                            ->required(),
+                    ])
+                    ->action(fn ($record, array $data) => 
+                        $record->reject(auth()->user(), $data['rejection_reason'])
+                    ),
+                
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('bulk_approve')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(fn ($records) => $records->each->approve(auth()->user())),
+                
+                Tables\Actions\DeleteBulkAction::make(),
+            ])
+            ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListPosts::route('/'),
+            'create' => Pages\CreatePost::route('/create'),
+            'edit' => Pages\EditPost::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        
+        // Sourcers can only see their own posts
+        if (auth()->user()->role === 'sourcer') {
+            $query->where('sourcer_id', auth()->id());
+        }
+        
+        return $query;
+    }
+}
+```
+
+### 7. 2 Role-Based Panel Access
+
+```php
+<? php
+
+namespace App\Filament;
+
+use Filament\Panel;
+use Filament\PanelProvider;
+use Filament\Navigation\NavigationGroup;
+use Illuminate\Support\Facades\Gate;
+
+class AdminPanelProvider extends PanelProvider
+{
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->default()
+            ->id('admin')
+            ->path('admin')
+            ->login()
+            ->colors([
+                'primary' => '#3B82F6',
+            ])
+            ->brandName('CuroNews Admin')
+            ->brandLogo(asset('images/logo. svg'))
+            ->favicon(asset('images/favicon.ico'))
+            ->navigationGroups([
+                NavigationGroup::make('Content')
+                    ->icon('heroicon-o-document-text'),
+                NavigationGroup::make('Users')
+                    ->icon('heroicon-o-users')
+                    ->collapsed(),
+                NavigationGroup::make('Settings')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->collapsed(),
+            ])
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+            ->middleware([
+                'web',
+                \Filament\Http\Middleware\Authenticate::class,
+            ])
+            ->authMiddleware([
+                \App\Http\Middleware\EnsureUserHasAdminAccess::class,
+            ]);
+    }
+}
+```
+
+### 7.3 Dashboard Widgets
+
+```php
+<?php
+
+namespace App\Filament\Widgets;
+
+use App\Models\Post;
+use Filament\Widgets\StatsOverviewWidget as BaseWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
+
+class ContentStatsWidget extends BaseWidget
+{
+    protected static ? int $sort = 1;
+
+    protected function getStats(): array
+    {
+        return [
+            Stat::make('Pending Review', Post::where('status', 'pending')->count())
+                ->description('Awaiting approval')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color('warning')
+                ->chart([7, 3, 4, 5, 6, 3, 5])
+                ->url(route('filament.admin.resources.posts.index', ['tableFilters[status][value]' => 'pending'])),
+
+            Stat::make('Published Today', Post::whereDate('published_at', today())->count())
+                ->description('Articles published')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color('success'),
+
+            Stat::make('Total Published', Post::where('status', 'published')->count())
+                ->description('All time')
+                ->descriptionIcon('heroicon-m-newspaper')
+                ->color('primary'),
+
+            Stat::make('Total Engagement', 
+                Post::withCount(['likes', 'saves'])
+                    ->get()
+                    ->sum(fn ($post) => $post->likes_count + $post->saves_count)
+            )
+                ->description('Likes + Saves')
+                ->descriptionIcon('heroicon-m-heart')
+                ->color('danger'),
+        ];
+    }
+}
+```
+
+---
+
+## 8. Authentication System
+
+### 8.1 Laravel Sanctum Configuration
+
+```php
+<?php
+
+// config/sanctum. php
+return [
+    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
+        '%s%s',
+        'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,:: 1',
+        env('APP_URL') ?  ',' .  parse_url(env('APP_URL'), PHP_URL_HOST) : ''
+    ))),
+
+    'guard' => ['web'],
+
+    'expiration' => 60 * 24 * 7, // 7 days
+
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
+
+    'middleware' => [
+        'authenticate_session' => Laravel\Sanctum\Http\Middleware\AuthenticateSession::class,
+        'encrypt_cookies' => App\Http\Middleware\EncryptCookies::class,
+        'verify_csrf_token' => App\Http\Middleware\VerifyCsrfToken:: class,
+    ],
+];
+```
+
+### 8.2 Auth Controller
+
+```php
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
+
+class AuthController extends Controller
+{
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $user = User::create([
+            'uuid' => (string) Str::uuid(),
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'user',
+        ]);
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user->only(['uuid', 'name', 'email', 'avatar']),
+            'token' => $token,
+        ], 201);
+    }
+
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
+        // Revoke previous tokens
+        $user->tokens()->delete();
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'user' => $user->only(['uuid', 'name', 'email', 'avatar', 'role']),
+            'token' => $token,
+        ]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    public function user(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        return response()->json([
+            'user' => $user->only(['uuid', 'name', 'email', 'avatar', 'role']),
+            'stats' => [
+                'likes_count' => $user->likes()->count(),
+                'saves_count' => $user->saves()->count(),
+            ],
+        ]);
+    }
+}
+```
+
+### 8.3 Frontend Auth Hook
+
+```typescript
+// lib/hooks/use-auth.ts
+'use client';
+
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { User } from '@/lib/types/user';
+import { authApi } from '@/lib/api/auth';
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  isLoginModalOpen: boolean;
+  
+  // Actions
+  login: (email: string, password:  string) => Promise<void>;
+  register: (name: string, email:  string, password: string) => Promise<void>;
+  logout:  () => Promise<void>;
+  fetchUser: () => Promise<void>;
+  openLoginModal: () => void;
+  closeLoginModal: () => void;
+}
+
+export const useAuth = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      token: null,
+      isLoading: false,
+      isLoginModalOpen: false,
+
+      login: async (email: string, password: string) => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.login(email, password);
+          set({
+            user: response.user,
+            token: response.token,
+            isLoginModalOpen: false,
+          });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      register: async (name:  string, email: string, password: string) => {
+        set({ isLoading:  true });
+        try {
+          const response = await authApi. register(name, email, password);
+          set({
+            user: response.user,
+            token: response.token,
+            isLoginModalOpen:  false,
+          });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      logout:  async () => {
+        const { token } = get();
+        if (token) {
+          await authApi.logout();
+        }
+        set({ user: null, token: null });
+      },
+
+      fetchUser: async () => {
+        const { token } = get();
+        if (!token) return;
+        
+        set({ isLoading:  true });
+        try {
+          const response = await authApi. getUser();
+          set({ user: response.user });
+        } catch {
+          set({ user: null, token: null });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      openLoginModal: () => set({ isLoginModalOpen:  true }),
+      closeLoginModal: () => set({ isLoginModalOpen: false }),
+    }),
+    {
+      name:  'curonews-auth',
+      partialize: (state) => ({ token: state.token }),
+    }
+  )
+);
+```
+
+---
+
+## 9. Caching Strategy
+
+### 9.1 Redis Cache Configuration
+
+```php
+<?php
+
+// config/cache.php
+return [
+    'default' => env('CACHE_DRIVER', 'redis'),
+
+    'stores' => [
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => 'cache',
+            'lock_connection' => 'default',
+        ],
+    ],
+
+    'prefix' => env('CACHE_PREFIX', 'curonews_cache_'),
+];
+```
+
+### 9.2 Cache Keys & TTL Strategy
+
+| Cache Key Pattern | TTL | Description |
+|-------------------|-----|-------------|
+| `posts:feed: page:{n}` | 5 min | Paginated feed results |
+| `posts:category:{slug}: page:{n}` | 5 min | Category filtered posts |
+| `posts:single:{uuid}` | 15 min | Single post details |
+| `categories:all` | 1 hour | All categories list |
+| `tags:popular` | 30 min | Popular tags |
+| `user:{id}:likes` | 10 min | User's liked posts |
+| `user:{id}:saves` | 10 min | User's saved posts |
+| `stats:dashboard` | 5 min | Admin dashboard stats |
+
+### 9.3 Cache Service
+
+```php
+<?php
+
+namespace App\Services;
+
+use App\Models\Post;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Pagination\LengthAwarePaginator;
+
+class PostCacheService
+{
+    private const FEED_TTL = 300;      // 5 minutes
+    private const SINGLE_TTL = 900;    // 15 minutes
+
+    public function getFeed(int $page = 1, int $perPage = 20, ? string $category = null): LengthAwarePaginator
+    {
+        $cacheKey = $category 
+            ? "posts:category:{$category}:page:{$page}" 
+            : "posts:feed:page:{$page}";
+
+        return Cache::remember($cacheKey, self::FEED_TTL, function () use ($page, $perPage, $category) {
+            $query = Post::query()
+                ->with(['category', 'tags'])
+                ->withCount(['likes', 'saves'])
+                ->where('status', 'published')
+                ->orderByDesc('published_at');
+
+            if ($category) {
+                $query->whereHas('category', fn ($q) => $q->where('slug', $category));
+            }
+
+            return $query->paginate($perPage, ['*'], 'page', $page);
+        });
+    }
+
+    public function getPost(string $uuid): ?Post
+    {
+        return Cache::remember(
+            "posts:single:{$uuid}",
+            self:: SINGLE_TTL,
+            fn () => Post::query()
+                ->with(['category', 'tags', 'sourcer: id,name'])
+                ->withCount(['likes', 'saves'])
+                ->where('uuid', $uuid)
+                ->where('status', 'published')
+                ->first()
+        );
+    }
+
+    public function invalidatePost(Post $post): void
+    {
+        Cache::forget("posts:single:{$post->uuid}");
+        
+        // Invalidate feed caches (simplified - in production use cache tags)
+        for ($i = 1; $i <= 10; $i++) {
+            Cache::forget("posts: feed:page:{$i}");
+            Cache::forget("posts:category:{$post->category->slug}:page:{$i}");
+        }
+    }
+
+    public function invalidateFeed(): void
+    {
+        // Use cache tags in production for more efficient invalidation
+        Cache::flush();
+    }
+}
+```
+
+---
+
+## 10. Queue & Job Configuration
+
+### 10.1 Queue Setup
+
+```php
+<?php
+
+// config/queue.php
+return [
+    'default' => env('QUEUE_CONNECTION', 'redis'),
+
+    'connections' => [
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => env('REDIS_QUEUE', 'default'),
+            'retry_after' => 90,
+            'block_for' => null,
+            'after_commit' => false,
+        ],
+    ],
+
+    'batching' => [
+        'database' => env('DB_CONNECTION', 'mysql'),
+        'table' => 'job_batches',
+    ],
+
+    'failed' => [
+        'driver' => env('QUEUE_FAILED_DRIVER', 'database-uuids'),
+        'database' => env('DB_CONNECTION', 'mysql'),
+        'table' => 'failed_jobs',
+    ],
+];
+```
+
+### 10.2 Queue Worker Configuration
+
+```ini
+# supervisor configuration:  /etc/supervisor/conf.d/curonews-worker.conf
+
+[program:curonews-worker-default]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/curonews/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=2
+redirect_stderr=true
+stdout_logfile=/var/www/curonews/storage/logs/worker. log
+stopwaitsecs=3600
+
+[program:curonews-worker-images]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/curonews/artisan queue:work redis --queue=images --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/curonews/storage/logs/worker-images.log
+stopwaitsecs=3600
+
+[program: curonews-worker-telegram]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/curonews/artisan queue:work redis --queue=telegram --sleep=3 --tries=5 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/curonews/storage/logs/worker-telegram.log
+stopwaitsecs=3600
+```
+
+### 10.3 Job Classes Summary
+
+| Job | Queue | Description | Retry |
+|-----|-------|-------------|-------|
+| `ProcessPostImage` | `images` | Generate 9: 16 processed image | 3 |
+| `SendTelegramNotification` | `telegram` | Send post review notification | 5 |
+| `UpdateTelegramMessage` | `telegram` | Update message after approval/rejection | 3 |
+| `IncrementViewCount` | `default` | Async view counter update | 1 |
+| `InvalidatePostCache` | `default` | Clear relevant caches | 1 |
+
+---
+
+## 11. Testing Strategy
+
+### 11.1 Test Structure
+
+```
+tests/
+├── Feature/
+│   ├── Api/
+│   │   ├── AuthTest.php
+│   │   ├── PostsTest.php
+│   │   ├── InteractionsTest.php
+│   │   └── TelegramWebhookTest.php
+│   ├── Filament/
+│   │   ├── PostResourceTest.php
+│   │   └── DashboardTest.php
+│   └── Jobs/
+│       ├── ProcessPostImageTest.php
+│       └── SendTelegramNotificationTest.php
+├── Unit/
+│   ├── Models/
+│   │   ├── PostTest.php
+│   │   ├── UserTest.php
+│   │   └── InteractionTest.php
+│   └── Services/
+│       ├── TelegramServiceTest. php
+│       ├── ImageProcessingServiceTest.php
+│       └── PostCacheServiceTest.php
+└── TestCase.php
+```
+
+### 11.2 Example Feature Test
+
+```php
+<?php
+
+namespace Tests\Feature\Api;
+
+use App\Models\Post;
+use App\Models\User;
+use App\Models\Category;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class PostsTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        $this->category = Category::factory()->create();
+    }
+
+    public function test_guests_can_view_published_posts(): void
+    {
+        $posts = Post::factory()
+            ->count(5)
+            ->published()
+            ->for($this->category)
+            ->create();
+
+        $response = $this->getJson('/api/posts');
+
+        $response->assertOk()
+            ->assertJsonCount(5, 'data')
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'uuid',
+                        'title',
+                        'slug',
+                        'excerpt',
+                        'image_processed',
+                        'category',
+                        'published_at',
+                        'likes_count',
+                        'saves_count',
+                    ],
+                ],
+                'meta' => [
+                    'current_page',
+                    'last_page',
+                    'per_page',
+                    'total',
+                ],
+            ]);
+    }
+
+    public function test_guests_cannot_view_pending_posts(): void
+    {
+        Post::factory()->pending()->create();
+
+        $response = $this->getJson('/api/posts');
+
+        $response->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_authenticated_users_can_like_posts(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::factory()->published()->create();
+
+        $response = $this->actingAs($user)
+            ->postJson("/api/posts/{$post->uuid}/like");
+
+        $response->assertOk()
+            ->assertJson(['liked' => true]);
+
+        $this->assertDatabaseHas('interactions', [
+            'user_id' => $user->id,
+            'post_id' => $post->id,
+            'type' => 'like',
+        ]);
+    }
+
+    public function test_guests_cannot_like_posts(): void
+    {
+        $post = Post::factory()->published()->create();
+
+        $response = $this->postJson("/api/posts/{$post->uuid}/like");
+
+        $response->assertUnauthorized();
+    }
+
+    public function test_liking_twice_removes_like(): void
+    {
+        $user = User::factory()->create();
+        $post = Post::factory()->published()->create();
+
+        // First like
+        $this->actingAs($user)->postJson("/api/posts/{$post->uuid}/like");
+        
+        // Second like (toggle off)
+        $response = $this->actingAs($user)
+            ->postJson("/api/posts/{$post->uuid}/like");
+
+        $response->assertOk()
+            ->assertJson(['liked' => false]);
+
+        $this->assertDatabaseMissing('interactions', [
+            'user_id' => $user->id,
+            'post_id' => $post->id,
+            'type' => 'like',
+        ]);
+    }
+}
+```
+
+### 11.3 Frontend Testing (Vitest + Testing Library)
+
+```typescript
+// __tests__/components/post-card.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
+import { PostCard } from '@/components/posts/post-card';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const mockPost = {
+  uuid: 'test-uuid',
+  title:  'Test Post Title',
+  slug:  'test-post-title',
+  excerpt:  'Test excerpt.. .',
+  image_processed: '/test-image.jpg',
+  category: {
+    name: 'Research',
+    slug:  'research',
+    color: '#3B82F6',
+  },
+  tags: [],
+  published_at: '2025-12-12T10:00:00Z',
+  likes_count: 10,
+  saves_count: 5,
+  user_liked: false,
+  user_saved: false,
+};
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false },
+  },
+});
+
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <QueryClientProvider client={queryClient}>
+    {children}
+  </QueryClientProvider>
+);
+
+describe('PostCard', () => {
+  it('renders post title and category', () => {
+    render(<PostCard post={mockPost} />, { wrapper });
+    
+    expect(screen.getByText('Test Post Title')).toBeInTheDocument();
+    expect(screen.getByText('Research')).toBeInTheDocument();
+  });
+
+  it('displays like count', () => {
+    render(<PostCard post={mockPost} />, { wrapper });
+    
+    expect(screen.getByText('10')).toBeInTheDocument();
+  });
+
+  it('opens modal when clicked', async () => {
+    render(<PostCard post={mockPost} />, { wrapper });
+    
+    const card = screen.getByRole('article');
+    fireEvent.click(card);
+    
+    // Modal should be open (implementation depends on your modal component)
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('prompts login when unauthenticated user tries to like', async () => {
+    const openLoginModal = vi. fn();
+    vi.mock('@/lib/hooks/use-auth', () => ({
+      useAuth: () => ({ user: null, openLoginModal }),
+    }));
+
+    render(<PostCard post={mockPost} />, { wrapper });
+    
+    const likeButton = screen. getByRole('button', { name: /like/i });
+    fireEvent.click(likeButton);
+    
+    expect(openLoginModal).toHaveBeenCalled();
+  });
+});
+```
+
+---
+
+## 12. Deployment Architecture
+
+### 12.1 Infrastructure Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      PRODUCTION INFRASTRUCTURE                       │
+│                      (cPanel Shared Hosting)                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+                         ┌──────────────┐
+                         │  Cloudflare  │
+                         │   (DNS/CDN)  │
+                         │   Free SSL   │
+                         └──────┬───────┘
+                                │
+         ┌──────────────────────┼──────────────────────┐
+         │                      │                      │
+         ▼                      ▼                      ▼
+┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
+│  curonews.com   │   │api.curonews.com │   │admin.curonews.com│
+│  (Next.js       │   │  (Laravel API)  │   │   (Filament)    │
+│  Static Export) │   │                 │   │                 │
+└────────┬────────┘   └────────┬────────┘   └────────┬────────┘
+         │                     │                     │
+         └──────────────────┬──┴─────────────────────┘
+                            │
+                ┌───────────▼───────────┐
+                │   cPanel Server       │
+                │   (BDIX Advance)      │
+                │                       │
+                │  ┌─────────────────┐  │
+                │  │   public_html/  │  │
+                │  │   ├── /         │  │ ◄── Next.js Static
+                │  │   ├── api/      │  │ ◄── Laravel
+                │  │   └── admin/    │  │ ◄── Filament
+                │  └─────────────────┘  │
+                │                       │
+                │  ┌─────────────────┐  │
+                │  │     MySQL       │  │
+                │  │   (Database)    │  │
+                │  └─────────────────┘  │
+                │                       │
+                │  ┌─────────────────┐  │
+                │  │  File Manager   │  │
+                │  │  (Storage)      │  │
+                │  └─────────────────┘  │
+                └───────────┬───────────┘
+                            │
+              ┌─────────────┼─────────────┐
+              │             │             │
+        ┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
+        │ Telegram  │ │Cloudinary │ │  Cron     │
+        │  Bot API  │ │ (Optional)│ │  Jobs     │
+        └───────────┘ └───────────┘ └───────────┘
+```
+
+### 12.2 Environment Variables
+
+```bash
+# .env.production (Backend - Laravel)
+
+APP_NAME=CuroNews
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://api.curonews.com
+
+# Database (cPanel MySQL)
+DB_CONNECTION=mysql
+DB_HOST=localhost
+DB_PORT=3306
+DB_DATABASE=curonews
+DB_USERNAME=${DB_USERNAME}
+DB_PASSWORD=${DB_PASSWORD}
+
+# Queue (Database Driver - no Redis on shared hosting)
+QUEUE_CONNECTION=database
+
+# Cache (File-based for shared hosting)
+CACHE_DRIVER=file
+SESSION_DRIVER=file
+
+# Storage (Local or Cloudinary)
+FILESYSTEM_DISK=local
+# Optional Cloudinary
+CLOUDINARY_URL=${CLOUDINARY_URL}
+
+# Telegram
+TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+TELEGRAM_ADMIN_GROUP_ID=${TELEGRAM_ADMIN_GROUP_ID}
+TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET}
+
+# Sanctum
+SANCTUM_STATEFUL_DOMAINS=curonews.com,www.curonews.com
+SESSION_DOMAIN=.curonews.com
+
+# Frontend URL (for CORS)
+FRONTEND_URL=https://curonews.com
+```
+
+```bash
+# .env.production (Frontend - Next.js)
+
+NEXT_PUBLIC_API_URL=https://api.curonews.com
+NEXT_PUBLIC_APP_NAME=CuroNews
+NEXT_PUBLIC_APP_URL=https://curonews.com
+```
+
+### 12.3 Deployment Process (cPanel)
+
+```bash
+# Deployment Steps for cPanel Shared Hosting
+
+# 1. Build Next.js Static Export locally
+npm run build
+# This generates 'out' folder with static files
+
+# 2. Upload via cPanel File Manager or FTP
+# Upload 'out' folder contents to public_html/
+
+# 3. Laravel Backend Setup
+# Upload Laravel to a subdomain (api.curonews.com)
+# Via SSH or File Manager:
+cd ~/api.curonews.com
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# 4. Set up Cron Job in cPanel for Laravel Scheduler
+# Add to Cron Jobs:
+* * * * * cd ~/api.curonews.com && php artisan schedule:run >> /dev/null 2>&1
+
+# 5. Queue Worker via Cron (alternative to supervisor)
+# Run queue worker every minute:
+* * * * * cd ~/api.curonews.com && php artisan queue:work --stop-when-empty >> /dev/null 2>&1
+```
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with: 
+          php-version:  ${{ env.PHP_VERSION }}
+          extensions: mbstring, pdo, pdo_mysql, redis, gd, imagick
+          coverage: xdebug
+      
+      - name: Install Composer dependencies
+        working-directory: ./backend
+        run: composer install --prefer-dist --no-progress
+      
+      - name: Copy .env
+        working-directory:  ./backend
+        run: cp .env.testing .env
+      
+      - name: Generate key
+        working-directory: ./backend
+        run: php artisan key:generate
+      
+      - name:  Run migrations
+        working-directory: ./backend
+        run: php artisan migrate --force
+      
+      - name:  Run tests
+        working-directory: ./backend
+        run: php artisan test --coverage --min=80
+
+  test-frontend: 
+    runs-on: ubuntu-latest
+    
+    steps: 
+      - uses:  actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with: 
+          node-version:  ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path:  ./frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run linter
+        working-directory: ./frontend
+        run: npm run lint
+      
+      - name: Run type check
+        working-directory: ./frontend
+        run: npm run type-check
+      
+      - name:  Run tests
+        working-directory: ./frontend
+        run: npm run test
+
+  deploy-backend: 
+    needs: [test-backend, test-frontend]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    steps: 
+      - uses:  actions/checkout@v4
+      
+      - name: Deploy to Production
+        uses: appleboy/ssh-action@v1. 0.0
+        with:
+          host: ${{ secrets. PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key:  ${{ secrets. PRODUCTION_SSH_KEY }}
+          script:  |
+            cd /var/www/curonews-api
+            git pull origin main
+            composer install --no-dev --optimize-autoloader
+            php artisan migrate --force
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view: cache
+            php artisan queue:restart
+            sudo supervisorctl restart curonews-worker: *
+
+  deploy-frontend: 
+    needs: [test-backend, test-frontend]
+    if: github.ref == 'refs/heads/main'
+    runs-on:  ubuntu-latest
+    
+    steps: 
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel
+        uses:  amondnet/vercel-action@v25
+        with: 
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets. VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets. VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./frontend
+```
+
+---
+
+## 13. Security Considerations
+
+### 13.1 Security Checklist
+
+| Area | Implementation | Status |
+|------|----------------|--------|
+| **Authentication** | Laravel Sanctum with token expiration | ☐ |
+| **CORS** | Strict origin whitelist | ☐ |
+| **Rate Limiting** | 60 req/min guests, 120 req/min authenticated | ☐ |
+| **Input Validation** | Form requests with strict validation | ☐ |
+| **SQL Injection** | Eloquent ORM (parameterized queries) | ☐ |
+| **XSS Prevention** | Content sanitization, CSP headers | ☐ |
+| **CSRF** | Sanctum cookie-based CSRF | ☐ |
+| **File Upload** | MIME validation, size limits, virus scan | ☐ |
+| **Telegram Webhook** | Secret token verification | ☐ |
+| **Admin Access** | Role-based middleware, 2FA (Phase 2) | ☐ |
+| **Secrets Management** | Environment variables, no hardcoding | ☐ |
+| **HTTPS** | Enforce TLS 1.3 | ☐ |
+
+### 13.2 Rate Limiting Configuration
+
+```php
+<?php
+
+// app/Providers/RouteServiceProvider.php
+
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+
+public function boot(): void
+{
+    RateLimiter::for('api', function (Request $request) {
+        return $request->user()
+            ?  Limit::perMinute(120)->by($request->user()->id)
+            : Limit::perMinute(60)->by($request->ip());
+    });
+
+    RateLimiter::for('auth', function (Request $request) {
+        return Limit::perMinute(5)->by($request->ip());
+    });
+
+    RateLimiter::for('interactions', function (Request $request) {
+        return Limit::perMinute(30)->by($request->user()->id);
+    });
+}
+```
+
+---
+
+## 14. Monitoring & Observability
+
+### 14.1 Logging Configuration
+
+```php
+<?php
+
+// config/logging.php
+return [
+    'default' => env('LOG_CHANNEL', 'stack'),
+
+    'channels' => [
+        'stack' => [
+            'driver' => 'stack',
+            'channels' => ['daily', 'slack'],
+            'ignore_exceptions' => false,
+        ],
+
+        'daily' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/laravel. log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+        ],
+
+        'slack' => [
+            'driver' => 'slack',
+            'url' => env('LOG_SLACK_WEBHOOK_URL'),
+            'username' => 'CuroNews Bot',
+            'emoji' => ':boom:',
+            'level' => 'error',
+        ],
+    ],
+];
+```
+
+### 14.2 Health Check Endpoint
+
+```php
+<?php
+
+// routes/api.php
+Route:: get('/health', function () {
+    $checks = [
+        'database' => fn () => DB::connection()->getPdo() !== null,
+        'redis' => fn () => Redis::ping() === 'PONG',
+        'storage' => fn () => Storage::disk('s3')->exists('. health'),
+    ];
+
+    $results = [];
+    $healthy = true;
+
+    foreach ($checks as $name => $check) {
+        try {
+            $results[$name] = $check() ? 'ok' : 'fail';
+        } catch (\Exception $e) {
+            $results[$name] = 'fail';
+            $healthy = false;
+        }
+    }
+
+    return response()->json([
+        'status' => $healthy ?  'healthy' :  'unhealthy',
+        'checks' => $results,
+        'timestamp' => now()->toIso8601String(),
+    ], $healthy ?  200 : 503);
+});
+```
+
+---
+
+## 15. Development Milestones & Timeline
+
+### Sprint Breakdown
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     10-DAY DEVELOPMENT TIMELINE                      │
+└─────────────────────────────────────────────────────────────────────┘
+
+DAY 1-2: Foundation
+├── [ ] Laravel project setup with best practices
+├── [ ] Database migrations & seeders
+├── [ ] Filament installation & configuration
+├── [ ] Basic PostResource CRUD
+├── [ ] User & role system
+└── [ ] cPanel hosting setup
+
+DAY 3-4: Content Workflow
+├── [ ] Sourcer submission flow
+├── [ ] Post status state machine
+├── [ ] Telegram bot setup & registration
+├── [ ] SendTelegramNotification job
+├── [ ] Webhook handler for button callbacks
+└── [ ] Admin approval/rejection actions (with optional feedback)
+
+DAY 5-6: Image Processing
+├── [ ] Intervention Image integration
+├── [ ] ProcessPostImage job
+├── [ ] 9:16 canvas generation
+├── [ ] Blur effect implementation
+├── [ ] Local/Cloudinary upload
+└── [ ] Cron-based queue worker configuration
+
+DAY 7-8: Frontend Core
+├── [ ] Next.js project setup (Static Export)
+├── [ ] Tailwind + Shadcn configuration
+├── [ ] Design tokens & theme
+├── [ ] PostCard component
+├── [ ] PostGrid (Bento layout)
+├── [ ] PostModal component
+├── [ ] Feed page with infinite scroll
+└── [ ] Category filtering
+
+DAY 9-10: Auth & Interactions
+├── [ ] Sanctum authentication
+├── [ ] Login/Register forms
+├── [ ] Auth state management
+├── [ ] Like/Save functionality
+├── [ ] User profile page
+├── [ ] Liked/Saved collections
+├── [ ] Testing & bug fixes
+└── [ ] Production deployment to cPanel
+
+FUTURE (V2): Social Media Features
+├── [ ] Social feed with personalized content
+├── [ ] User-generated posts
+├── [ ] Comments and reactions
+├── [ ] Friend/follower system
+├── [ ] Direct messaging and chats
+└── [ ] Content sharing capabilities
+```
+
+### Design Decisions
+
+| Question | Decision |
+|----------|----------|
+| **Telegram Edit Flow** | Opens web dashboard for editing |
+| **Rejection Feedback** | Optional feedback field provided |
+| **Draft Expiration** | Drafts do not expire |
+
+---
+
+## 16. Appendix
+
+### 16.1 API Response Codes
+
+| Code | Meaning | Usage |
+|------|---------|-------|
+| `200` | OK | Successful GET, PUT, PATCH |
+| `201` | Created | Successful POST |
+| `204` | No Content | Successful DELETE |
+| `400` | Bad Request | Validation error |
+| `401` | Unauthorized | Missing/invalid token |
+| `403` | Forbidden | Insufficient permissions |
+| `404` | Not Found | Resource doesn't exist |
+| `422` | Unprocessable | Validation failed |
+| `429` | Too Many Requests | Rate limit exceeded |
+| `500` | Server Error | Unexpected error |
+
+### 16.2 Useful Commands
+
+```bash
+# Backend (Laravel)
+php artisan make:model Post -mfsc    # Model + Migration + Factory + Seeder + Controller
+php artisan queue:work --queue=images,telegram,default
+php artisan filament:make-resource Post --generate
+php artisan test --filter=PostsTest
+
+# Frontend (Next.js)
+npx shadcn-ui@latest add button card dialog
+npm run dev
+npm run build && npm run start
+npm run test -- --watch
+
+# Telegram Bot Setup
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+  -d "url=https://api.curonews. com/api/telegram/webhook" \
+  -d "secret_token=<WEBHOOK_SECRET>"
+```
+
+### 16.3 External Resources
+
+- [Laravel 11 Documentation](https://laravel.com/docs/11.x)
+- [Filament PHP Documentation](https://filamentphp.com/docs)
+- [Next.js App Router](https://nextjs.org/docs/app)
+- [Shadcn/UI Components](https://ui.shadcn.com/)
+- [TanStack Query](https://tanstack.com/query/latest)
+- [Telegram Bot API](https://core.telegram.org/bots/api)
+- [Intervention Image](https://image.intervention.io/v3)
+
+---
+
+## 17. Document Information
+
+**Created by:** Shakib Bin Kabir  
+**Last updated:** December 12, 2025
+
+---
+
+*CuroNews Engineering Team*
