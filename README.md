@@ -88,7 +88,7 @@ This project is **proprietary software**. All rights reserved.
 
 No part of this software may be used, copied, modified, or distributed without prior written permission from the copyright holder. See [LICENSE](LICENSE) for details.
 
-##�👤 Creator
+## 👤 Creator
 
 **Shakib Bin Kabir**
 
