@@ -21,6 +21,8 @@ In today's world, health misinformation is everywhere.  CuroNews solves this by:
 2. **Beautiful, Distraction-Free Design** - A calm, premium reading experience inspired by Apple's design philosophy
 3. **Curated, Not Algorithmic** - Real experts select content, not automated systems
 
+**Implementation Note:** The entire reader and admin experience runs on raw Laravel (Blade + Tailwind) with Filament for admin; no separate Next.js frontend.
+
 ### Success Metrics (KPIs)
 
 | Metric | Target (6 Months) | How We Measure |
@@ -276,32 +278,32 @@ Admins receive instant notifications when new content is submitted:
 
 ```
 Day 1-2: Foundation
-├── Set up backend systems
-├── Create admin dashboard
-└── Basic database structure
+├── [ ] Set up backend systems
+├── [ ] Create admin dashboard
+└── [ ] Basic database structure
 
 Day 3-4: Approval Workflow
-├── Telegram bot setup
-├── Approval button functionality
-└── Status management
+├── [x] Telegram bot setup
+├── [x] Approval button functionality
+└── [x] Status management
 
-Day 5-6: Frontend Development
-├── Bento grid layout
-├── Card component design
-├── Image processing system
-└── Article popup view
+Day 5-6: Laravel Frontend (Blade)
+├── [ ] Bento grid layout in Blade
+├── [ ] Card template styling with Tailwind
+├── [ ] Image processing display (blurred backdrop + 9:16)
+└── [ ] Article popup/modal view using Alpine/Livewire
 
 Day 7-8: User Features
-├── User registration/login
-├── Like functionality
-├── Save functionality
-└── User profile page
+├── [ ] User registration/login (Laravel auth + Sanctum)
+├── [ ] Like functionality
+├── [ ] Save functionality
+└── [ ] User profile page (likes/saves/history)
 
 Day 9-10: Polish & Launch
-├── Testing and bug fixes
-├── Performance optimization
-├── Content seeding
-└── Launch! 🚀
+├── [ ] Testing and bug fixes
+├── [ ] Performance optimization (caching, SQL review)
+├── [ ] Content seeding
+└── [ ] Launch! 🚀
 ```
 
 ### Future Phases (V2)

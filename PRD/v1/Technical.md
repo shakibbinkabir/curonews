@@ -16,43 +16,31 @@
 │                         SYSTEM ARCHITECTURE                         │
 └─────────────────────────────────────────────────────────────────────┘
 
-                     ┌───────────────────────┐
-                     │   cPanel Shared       │
-                     │   Web Hosting         │
-                     │   (BDIX Advance)      │
-                     └───────────┬───────────┘
-                                 │
-              ┌──────────────────┼──────────────────┐
-              │                  │                  │
-       ┌──────▼──────┐    ┌──────▼──────┐    ┌──────▼──────┐
-       │   Next.js   │    │   Laravel   │    │  Filament   │
-       │   14+ App   │    │     11      │    │    PHP      │
-       │   (Static   │    │   (API)     │    │  (Admin)    │
-       │   Export)   │    │             │    │             │
-       └──────┬──────┘    └──────┬──────┘    └─────────────┘
-              │                  │
-    ┌─────────┼─────────┐        │
-    │         │         │        │
-┌───▼───┐ ┌───▼───┐ ┌───▼───┐    │
-│Tanstack│ │ Auth  │ │Tailwind│   │
-│ Query │ │Sanctum│ │+Shadcn│    │
-└───────┘ └───┬───┘ └───────┘    │
-              │                  │
-              └────────┬─────────┘
-                       │
-              ┌────────▼────────┐
-              │     MySQL       │
-              │   (Unlimited    │
-              │   Databases)    │
-              └────────┬────────┘
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-  ┌─────▼─────┐ ┌──────▼──────┐ ┌─────▼─────┐
-  │ Telegram  │ │  Local File │ │   Image   │
-  │   Bot     │ │  Storage /  │ │ Processing│
-  │   API     │ │ Cloudinary  │ │(Intervention)
-  └───────────┘ └─────────────┘ └───────────┘
+      ┌───────────────────────┐
+      │   cPanel Shared       │
+      │   Web Hosting         │
+      │   (BDIX Advance)      │
+      └───────────┬───────────┘
+             │
+         ┌────────▼────────┐
+         │    Laravel 11   │
+         │  Web + API +    │
+         │   Filament      │
+         └────────┬────────┘
+             │
+         ┌────────▼────────┐
+         │     MySQL       │
+         │   (Unlimited    │
+         │   Databases)    │
+         └────────┬────────┘
+             │
+     ┌─────────────────┼─────────────────┐
+     │                 │                 │
+   ┌──────▼──────┐   ┌──────▼──────┐   ┌──────▼──────┐
+   │ Telegram    │   │ Local File  │   │ Image       │
+   │   Bot API   │   │ Storage /   │   │ Processing  │
+   │             │   │ Cloudinary  │   │ (Intervention)
+   └─────────────┘   └─────────────┘   └─────────────┘
 ```
 
 ### 1.2 Hosting Specifications (cPanel BDIX Advance)
@@ -80,14 +68,12 @@
 | Layer | Technology | Version | Justification |
 |-------|------------|---------|---------------|
 | **Hosting** | cPanel Shared | BDIX Advance | Cost-effective, SSH access, Node.js support |
-| **Frontend Framework** | Next.js | 14+ | App Router, Static Export for cPanel |
-| **Styling** | Tailwind CSS | 3.4+ | Utility-first, Shadcn compatibility |
-| **Component Library** | Shadcn/UI | Latest | Accessible, customizable, modern |
-| **State Management** | TanStack Query | 5+ | Server state, caching, mutations |
-| **Backend Framework** | Laravel | 11 | Robust, Filament support |
+| **Web + API** | Laravel | 11 | Single-stack app (Blade + API) on shared hosting |
+| **Styling** | Tailwind CSS | 3.4+ | Utility-first, works with Blade components |
+| **Frontend Runtime** | Laravel Blade + Alpine/Livewire (optional) | - | Keep UI server-rendered without Next.js |
 | **Admin Panel** | Filament PHP | 3+ | Rapid admin development |
 | **Database** | MySQL | 8+ | Unlimited databases on cPanel |
-| **Queue** | Database Driver | - | No Redis needed, uses MySQL |
+| **Queue** | Database Driver | - | Fits shared hosting, no Redis requirement |
 | **Image Processing** | Intervention Image | 3+ | Laravel integration |
 | **File Storage** | Local/Cloudinary | - | Local storage or Cloudinary for CDN |
 
@@ -822,315 +808,45 @@ class TelegramWebhookController extends Controller
 
 ---
 
-## 6. Frontend Architecture
+## 6. Web UI (Laravel)
 
-### 6.1 Project Structure
+### 6.1 View Structure
 
 ```
-curonews-frontend/
-├── app/
-│   ├── (auth)/
-│   │   ├── login/
-│   │   │   └── page.tsx
-│   │   └── register/
-│   │       └── page.tsx
-│   ├── (main)/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx                 # Home feed
-│   │   ├── category/
-│   │   │   └── [slug]/
-│   │   │       └── page. tsx
-│   │   ├── search/
-│   │   │   └── page.tsx
-│   │   └── profile/
-│   │       ├── page.tsx
-│   │       ├── likes/
-│   │       │   └── page.tsx
-│   │       └── saved/
-│   │           └── page. tsx
-│   ├── api/
-│   │   └── auth/
-│   │       └── [... nextauth]/
-│   │           └── route.ts
-│   ├── layout.tsx
-│   └── globals.css
-├── components/
-│   ├── ui/                          # Shadcn components
-│   │   ├── button. tsx
-│   │   ├── card.tsx
-│   │   ├── dialog.tsx
-│   │   └── ... 
-│   ├── layout/
-│   │   ├── header.tsx
-│   │   ├── footer.tsx
-│   │   ├── navigation.tsx
-│   │   └── theme-toggle.tsx
-│   ├── posts/
-│   │   ├── post-card.tsx
-│   │   ├── post-grid.tsx
-│   │   ├── post-modal.tsx
-│   │   ├── post-interactions.tsx
-│   │   └── post-skeleton.tsx
+resources/
+├── views/
+│   ├── layouts/
+│   │   └── app.blade.php          # Shell with header/footer, meta tags, flash messages
+│   ├── components/                # Blade components for cards, badges, buttons
+│   │   ├── card.blade.php         # 9:16 bento card wrapper
+│   │   ├── badge.blade.php        # Category badge with color
+│   │   └── modal.blade.php        # Article modal
 │   ├── feed/
-│   │   ├── feed-container.tsx
-│   │   ├── feed-filters.tsx
-│   │   └── infinite-scroll.tsx
-│   └── auth/
-│       ├── login-form.tsx
-│       ├── register-form.tsx
-│       └── auth-guard.tsx
-├── lib/
-│   ├── api/
-│   │   ├── client.ts                # Axios/fetch wrapper
-│   │   ├── posts.ts
-│   │   ├── auth.ts
-│   │   └── interactions.ts
-│   ├── hooks/
-│   │   ├── use-posts.ts
-│   │   ├── use-auth.ts
-│   │   ├── use-interactions.ts
-│   │   └── use-infinite-scroll.ts
-│   ├── utils/
-│   │   ├── cn.ts                    # className utility
-│   │   └── formatters.ts
-│   └── types/
-│       ├── post.ts
-│       ├── user. ts
-│       └── api.ts
-├── providers/
-│   ├── query-provider.tsx
-│   ├── auth-provider.tsx
-│   └── theme-provider.tsx
-├── styles/
-│   └── themes. css
-├── public/
-│   └── ... 
-├── tailwind.config.ts
-├── next.config.js
-└── package.json
+│   │   └── index.blade.php        # Home feed with infinite scroll / "load more"
+│   ├── posts/
+│   │   └── show.blade.php         # Full article view
+│   ├── auth/
+│   │   ├── login.blade.php
+│   │   └── register.blade.php
+│   └── profile/
+│       ├── likes.blade.php
+│       └── saves.blade.php
+└── css/
+    └── app.css                    # Tailwind entry (compiled via Laravel Mix/Vite)
 ```
 
-### 6.2 Key Components
+### 6.2 UI Behavior
 
-#### PostCard Component
-
-```tsx
-// components/posts/post-card. tsx
-'use client';
-
-import { useState } from 'react';
-import Image from 'next/image';
-import { Heart, Bookmark } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
-import { Post } from '@/lib/types/post';
-import { useAuth } from '@/lib/hooks/use-auth';
-import { useInteractions } from '@/lib/hooks/use-interactions';
-import { PostModal } from './post-modal';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-
-interface PostCardProps {
-  post: Post;
-}
-
-export function PostCard({ post }: PostCardProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user, openLoginModal } = useAuth();
-  const { toggleLike, toggleSave, isLiking, isSaving } = useInteractions(post. uuid);
-
-  const handleInteraction = (action: 'like' | 'save') => {
-    if (! user) {
-      openLoginModal();
-      return;
-    }
-    action === 'like' ? toggleLike() : toggleSave();
-  };
-
-  return (
-    <>
-      <article
-        className={cn(
-          'group relative aspect-[9/16] overflow-hidden rounded-3xl',
-          'bg-neutral-100 dark:bg-neutral-900',
-          'cursor-pointer transition-transform duration-300',
-          'hover:scale-[1.02] hover:shadow-xl'
-        )}
-        onClick={() => setIsModalOpen(true)}
-      >
-        {/* Image */}
-        <Image
-          src={post.image_processed}
-          alt={post.title}
-          fill
-          className="object-cover"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-        />
-
-        {/* Gradient Overlay */}
-        <div
-          className={cn(
-            'absolute inset-0',
-            'bg-gradient-to-t from-black/80 via-black/20 to-transparent'
-          )}
-        />
-
-        {/* Category Badge */}
-        <Badge
-          className="absolute top-4 left-4"
-          style={{ backgroundColor: post.category.color }}
-        >
-          {post.category.name}
-        </Badge>
-
-        {/* Content Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <h3 className="text-white font-semibold text-lg leading-tight mb-4">
-            {post.title}
-          </h3>
-
-          {/* Interaction Buttons */}
-          <div
-            className="flex items-center gap-3"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'text-white hover:bg-white/20',
-                post.user_liked && 'text-red-500'
-              )}
-              onClick={() => handleInteraction('like')}
-              disabled={isLiking}
-            >
-              <Heart
-                className={cn('w-5 h-5 mr-1', post.user_liked && 'fill-current')}
-              />
-              {post. likes_count}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'text-white hover:bg-white/20',
-                post.user_saved && 'text-yellow-500'
-              )}
-              onClick={() => handleInteraction('save')}
-              disabled={isSaving}
-            >
-              <Bookmark
-                className={cn('w-5 h-5', post.user_saved && 'fill-current')}
-              />
-            </Button>
-          </div>
-        </div>
-      </article>
-
-      <PostModal
-        post={post}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-    </>
-  );
-}
-```
-
-#### Post Grid (Bento Layout)
-
-```tsx
-// components/posts/post-grid.tsx
-'use client';
-
-import { Post } from '@/lib/types/post';
-import { PostCard } from './post-card';
-import { PostSkeleton } from './post-skeleton';
-import { cn } from '@/lib/utils/cn';
-
-interface PostGridProps {
-  posts: Post[];
-  isLoading?:  boolean;
-}
-
-export function PostGrid({ posts, isLoading }: PostGridProps) {
-  if (isLoading) {
-    return (
-      <div className={cn(
-        'grid gap-6',
-        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-      )}>
-        {Array.from({ length: 8 }).map((_, i) => (
-          <PostSkeleton key={i} />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        'grid gap-6',
-        'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl: grid-cols-4',
-        'auto-rows-auto'
-      )}
-    >
-      {posts.map((post) => (
-        <PostCard key={post.uuid} post={post} />
-      ))}
-    </div>
-  );
-}
-```
+- Use Blade + Tailwind for all reader pages; Alpine.js or Livewire for modals and like/save toggles to avoid a separate SPA.
+- Post cards remain 9:16; reuse processed image for cover and overlay excerpt/title.
+- Infinite scroll can be implemented with cursor-based pagination via AJAX endpoints that return Blade partials for cards.
+- Auth flows rely on Sanctum session cookies; prompts for guests open a login modal rendered in Blade.
 
 ### 6.3 Design Tokens
 
-```css
-/* styles/themes.css */
-
-: root {
-  /* Colors - Light Mode */
-  --background:  0 0% 96. 1%;          /* #F5F5F7 */
-  --foreground: 0 0% 9%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 9%;
-  --primary: 221. 2 83.2% 53.3%;      /* Blue accent */
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 96.1%;
-  --secondary-foreground: 0 0% 9%;
-  --muted: 0 0% 96.1%;
-  --muted-foreground: 0 0% 45.1%;
-  --accent: 0 0% 96.1%;
-  --accent-foreground: 0 0% 9%;
-  --destructive:  0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 89.8%;
-  --input: 0 0% 89.8%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 1. 5rem;                   /* 24px rounded corners */
-}
-
-. dark {
-  /* Colors - Dark Mode */
-  --background: 0 0% 7.1%;           /* #121212 */
-  --foreground: 0 0% 98%;
-  --card:  0 0% 11%;
-  --card-foreground: 0 0% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 0 0% 9%;
-  --secondary: 0 0% 14.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 0 0% 14.9%;
-  --muted-foreground: 0 0% 63.9%;
-  --accent: 0 0% 14.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground:  0 0% 98%;
-  --border: 0 0% 14.9%;
-  --input: 0 0% 14.9%;
-  --ring: 217.2 91.2% 59.8%;
-}
-```
+- Tailwind config holds light/dark color tokens aligning with product palette.
+- Rounded corners (`--radius: 1.5rem`) and generous spacing match the bento aesthetic.
+- Theme toggle (optional) can switch a `dark` class on `<html>`; no separate Next.js theme provider needed.
 
 ---
 
@@ -1590,101 +1306,12 @@ class AuthController extends Controller
 }
 ```
 
-### 8.3 Frontend Auth Hook
+### 8.3 Web Auth UI (Blade)
 
-```typescript
-// lib/hooks/use-auth.ts
-'use client';
-
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { User } from '@/lib/types/user';
-import { authApi } from '@/lib/api/auth';
-
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  isLoginModalOpen: boolean;
-  
-  // Actions
-  login: (email: string, password:  string) => Promise<void>;
-  register: (name: string, email:  string, password: string) => Promise<void>;
-  logout:  () => Promise<void>;
-  fetchUser: () => Promise<void>;
-  openLoginModal: () => void;
-  closeLoginModal: () => void;
-}
-
-export const useAuth = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      isLoading: false,
-      isLoginModalOpen: false,
-
-      login: async (email: string, password: string) => {
-        set({ isLoading: true });
-        try {
-          const response = await authApi.login(email, password);
-          set({
-            user: response.user,
-            token: response.token,
-            isLoginModalOpen: false,
-          });
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      register: async (name:  string, email: string, password: string) => {
-        set({ isLoading:  true });
-        try {
-          const response = await authApi. register(name, email, password);
-          set({
-            user: response.user,
-            token: response.token,
-            isLoginModalOpen:  false,
-          });
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      logout:  async () => {
-        const { token } = get();
-        if (token) {
-          await authApi.logout();
-        }
-        set({ user: null, token: null });
-      },
-
-      fetchUser: async () => {
-        const { token } = get();
-        if (!token) return;
-        
-        set({ isLoading:  true });
-        try {
-          const response = await authApi. getUser();
-          set({ user: response.user });
-        } catch {
-          set({ user: null, token: null });
-        } finally {
-          set({ isLoading: false });
-        }
-      },
-
-      openLoginModal: () => set({ isLoginModalOpen:  true }),
-      closeLoginModal: () => set({ isLoginModalOpen: false }),
-    }),
-    {
-      name:  'curonews-auth',
-      partialize: (state) => ({ token: state.token }),
-    }
-  )
-);
-```
+- Blade views for login/register (`resources/views/auth/*.blade.php`) backed by `AuthController` routes.
+- Sanctum session cookies issued after login; CSRF tokens handled via Blade helpers.
+- Guest prompts on like/save open a Blade-rendered modal (Alpine/Livewire) and post to `/login`.
+- Profile pages pull user stats (likes, saves) via server-rendered controllers; AJAX endpoints return JSON for like/save toggles.
 
 ---
 
@@ -1697,13 +1324,12 @@ export const useAuth = create<AuthState>()(
 
 // config/cache.php
 return [
-    'default' => env('CACHE_DRIVER', 'redis'),
+    'default' => env('CACHE_DRIVER', 'file'),
 
     'stores' => [
-        'redis' => [
-            'driver' => 'redis',
-            'connection' => 'cache',
-            'lock_connection' => 'default',
+        'file' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/data'),
         ],
     ],
 
@@ -1805,15 +1431,14 @@ class PostCacheService
 
 // config/queue.php
 return [
-    'default' => env('QUEUE_CONNECTION', 'redis'),
+    'default' => env('QUEUE_CONNECTION', 'database'),
 
     'connections' => [
-        'redis' => [
-            'driver' => 'redis',
-            'connection' => 'default',
-            'queue' => env('REDIS_QUEUE', 'default'),
+        'database' => [
+            'driver' => 'database',
+            'table' => 'jobs',
+            'queue' => 'default',
             'retry_after' => 90,
-            'block_for' => null,
             'after_commit' => false,
         ],
     ],
@@ -2038,85 +1663,11 @@ class PostsTest extends TestCase
 }
 ```
 
-### 11.3 Frontend Testing (Vitest + Testing Library)
+### 11.3 UI Testing (Laravel)
 
-```typescript
-// __tests__/components/post-card.test.tsx
-import { render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
-import { PostCard } from '@/components/posts/post-card';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-const mockPost = {
-  uuid: 'test-uuid',
-  title:  'Test Post Title',
-  slug:  'test-post-title',
-  excerpt:  'Test excerpt.. .',
-  image_processed: '/test-image.jpg',
-  category: {
-    name: 'Research',
-    slug:  'research',
-    color: '#3B82F6',
-  },
-  tags: [],
-  published_at: '2025-12-12T10:00:00Z',
-  likes_count: 10,
-  saves_count: 5,
-  user_liked: false,
-  user_saved: false,
-};
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: false },
-  },
-});
-
-const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <QueryClientProvider client={queryClient}>
-    {children}
-  </QueryClientProvider>
-);
-
-describe('PostCard', () => {
-  it('renders post title and category', () => {
-    render(<PostCard post={mockPost} />, { wrapper });
-    
-    expect(screen.getByText('Test Post Title')).toBeInTheDocument();
-    expect(screen.getByText('Research')).toBeInTheDocument();
-  });
-
-  it('displays like count', () => {
-    render(<PostCard post={mockPost} />, { wrapper });
-    
-    expect(screen.getByText('10')).toBeInTheDocument();
-  });
-
-  it('opens modal when clicked', async () => {
-    render(<PostCard post={mockPost} />, { wrapper });
-    
-    const card = screen.getByRole('article');
-    fireEvent.click(card);
-    
-    // Modal should be open (implementation depends on your modal component)
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
-  });
-
-  it('prompts login when unauthenticated user tries to like', async () => {
-    const openLoginModal = vi. fn();
-    vi.mock('@/lib/hooks/use-auth', () => ({
-      useAuth: () => ({ user: null, openLoginModal }),
-    }));
-
-    render(<PostCard post={mockPost} />, { wrapper });
-    
-    const likeButton = screen. getByRole('button', { name: /like/i });
-    fireEvent.click(likeButton);
-    
-    expect(openLoginModal).toHaveBeenCalled();
-  });
-});
-```
+- Feature tests cover feed rendering, pagination JSON endpoints, and like/save toggles.
+- Blade component tests validate card layout (image, title, category badge) and modal partials.
+- Optional Dusk tests for end-to-end flows: guest browsing, login prompt on like, and successful like/save after authentication.
 
 ---
 
@@ -2130,57 +1681,45 @@ describe('PostCard', () => {
 │                      (cPanel Shared Hosting)                         │
 └─────────────────────────────────────────────────────────────────────┘
 
-                         ┌──────────────┐
-                         │  Cloudflare  │
-                         │   (DNS/CDN)  │
-                         │   Free SSL   │
-                         └──────┬───────┘
-                                │
-         ┌──────────────────────┼──────────────────────┐
-         │                      │                      │
-         ▼                      ▼                      ▼
-┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐
-│  curonews.com   │   │api.curonews.com │   │admin.curonews.com│
-│  (Next.js       │   │  (Laravel API)  │   │   (Filament)    │
-│  Static Export) │   │                 │   │                 │
-└────────┬────────┘   └────────┬────────┘   └────────┬────────┘
-         │                     │                     │
-         └──────────────────┬──┴─────────────────────┘
-                            │
-                ┌───────────▼───────────┐
-                │   cPanel Server       │
-                │   (BDIX Advance)      │
-                │                       │
-                │  ┌─────────────────┐  │
-                │  │   public_html/  │  │
-                │  │   ├── /         │  │ ◄── Next.js Static
-                │  │   ├── api/      │  │ ◄── Laravel
-                │  │   └── admin/    │  │ ◄── Filament
-                │  └─────────────────┘  │
-                │                       │
-                │  ┌─────────────────┐  │
-                │  │     MySQL       │  │
-                │  │   (Database)    │  │
-                │  └─────────────────┘  │
-                │                       │
-                │  ┌─────────────────┐  │
-                │  │  File Manager   │  │
-                │  │  (Storage)      │  │
-                │  └─────────────────┘  │
-                └───────────┬───────────┘
-                            │
-              ┌─────────────┼─────────────┐
-              │             │             │
-        ┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
-        │ Telegram  │ │Cloudinary │ │  Cron     │
-        │  Bot API  │ │ (Optional)│ │  Jobs     │
-        └───────────┘ └───────────┘ └───────────┘
+                ┌──────────────┐
+                │  Cloudflare  │
+                │   (DNS/CDN)  │
+                │   Free SSL   │
+                └──────┬───────┘
+                    │
+            ┌──────────▼──────────┐
+            │    curonews.com     │
+            │  (Laravel web + API │
+            │   + /admin Filament)│
+            └──────────┬──────────┘
+                    │
+            ┌──────────▼──────────┐
+            │   cPanel Server     │
+            │   (BDIX Advance)    │
+            │                      │
+            │  ┌─────────────────┐ │
+            │  │   public_html/  │ │ ◄── Laravel app
+            │  └─────────────────┘ │
+            │                      │
+            │  ┌─────────────────┐ │
+            │  │     MySQL       │ │
+            │  └─────────────────┘ │
+            │                      │
+            │  ┌─────────────────┐ │
+            │  │  File Storage   │ │
+            │  │ (local/Cloudinary)
+            │  └─────────────────┘ │
+            └──────────┬──────────┘
+                    │
+            ┌──────────▼──────────┐
+            │ Telegram Bot API    │
+            └─────────────────────┘
 ```
 
 ### 12.2 Environment Variables
 
 ```bash
-# .env.production (Backend - Laravel)
+# .env.production (Laravel)
 
 APP_NAME=CuroNews
 APP_ENV=production
@@ -2215,147 +1754,84 @@ TELEGRAM_WEBHOOK_SECRET=${TELEGRAM_WEBHOOK_SECRET}
 # Sanctum
 SANCTUM_STATEFUL_DOMAINS=curonews.com,www.curonews.com
 SESSION_DOMAIN=.curonews.com
-
-# Frontend URL (for CORS)
+# CORS origins (web + admin on same host)
 FRONTEND_URL=https://curonews.com
-```
-
-```bash
-# .env.production (Frontend - Next.js)
-
-NEXT_PUBLIC_API_URL=https://api.curonews.com
-NEXT_PUBLIC_APP_NAME=CuroNews
-NEXT_PUBLIC_APP_URL=https://curonews.com
 ```
 
 ### 12.3 Deployment Process (cPanel)
 
 ```bash
-# Deployment Steps for cPanel Shared Hosting
+# Deployment Steps for cPanel Shared Hosting (single Laravel app)
 
-# 1. Build Next.js Static Export locally
-npm run build
-# This generates 'out' folder with static files
-
-# 2. Upload via cPanel File Manager or FTP
-# Upload 'out' folder contents to public_html/
-
-# 3. Laravel Backend Setup
-# Upload Laravel to a subdomain (api.curonews.com)
-# Via SSH or File Manager:
-cd ~/api.curonews.com
+# 1. Upload codebase (public_html/ for web + /admin)
+cd ~/curonews
 composer install --no-dev --optimize-autoloader
+php artisan key:generate
 php artisan migrate --force
+php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# 4. Set up Cron Job in cPanel for Laravel Scheduler
+# 2. Set up Cron Job in cPanel for Laravel Scheduler
 # Add to Cron Jobs:
-* * * * * cd ~/api.curonews.com && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd ~/curonews && php artisan schedule:run >> /dev/null 2>&1
 
-# 5. Queue Worker via Cron (alternative to supervisor)
+# 3. Queue Worker via Cron (database driver on shared hosting)
 # Run queue worker every minute:
-* * * * * cd ~/api.curonews.com && php artisan queue:work --stop-when-empty >> /dev/null 2>&1
+* * * * * cd ~/curonews && php artisan queue:work --queue=default,images,telegram --stop-when-empty >> /dev/null 2>&1
 ```
-      
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with: 
-          php-version:  ${{ env.PHP_VERSION }}
-          extensions: mbstring, pdo, pdo_mysql, redis, gd, imagick
-          coverage: xdebug
-      
-      - name: Install Composer dependencies
-        working-directory: ./backend
-        run: composer install --prefer-dist --no-progress
-      
-      - name: Copy .env
-        working-directory:  ./backend
-        run: cp .env.testing .env
-      
-      - name: Generate key
-        working-directory: ./backend
-        run: php artisan key:generate
-      
-      - name:  Run migrations
-        working-directory: ./backend
-        run: php artisan migrate --force
-      
-      - name:  Run tests
-        working-directory: ./backend
-        run: php artisan test --coverage --min=80
 
-  test-frontend: 
-    runs-on: ubuntu-latest
-    
-    steps: 
-      - uses:  actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with: 
-          node-version:  ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path:  ./frontend/package-lock.json
-      
-      - name: Install dependencies
-        working-directory: ./frontend
-        run: npm ci
-      
-      - name: Run linter
-        working-directory: ./frontend
-        run: npm run lint
-      
-      - name: Run type check
-        working-directory: ./frontend
-        run: npm run type-check
-      
-      - name:  Run tests
-        working-directory: ./frontend
-        run: npm run test
+GitHub Actions (backend-only):
 
-  deploy-backend: 
-    needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    
-    steps: 
-      - uses:  actions/checkout@v4
-      
-      - name: Deploy to Production
-        uses: appleboy/ssh-action@v1. 0.0
-        with:
-          host: ${{ secrets. PRODUCTION_HOST }}
-          username: ${{ secrets.PRODUCTION_USER }}
-          key:  ${{ secrets. PRODUCTION_SSH_KEY }}
-          script:  |
-            cd /var/www/curonews-api
-            git pull origin main
-            composer install --no-dev --optimize-autoloader
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view: cache
-            php artisan queue:restart
-            sudo supervisorctl restart curonews-worker: *
+```
+name: ci
 
-  deploy-frontend: 
-    needs: [test-backend, test-frontend]
-    if: github.ref == 'refs/heads/main'
-    runs-on:  ubuntu-latest
-    
-    steps: 
-      - uses: actions/checkout@v4
-      
-      - name: Deploy to Vercel
-        uses:  amondnet/vercel-action@v25
-        with: 
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets. VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets. VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
-          working-directory: ./frontend
+on: [push, pull_request]
+
+jobs:
+    test-backend:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup PHP
+                uses: shivammathur/setup-php@v2
+                with:
+                    php-version: ${{ env.PHP_VERSION }}
+                    extensions: mbstring, pdo, pdo_mysql, gd, imagick
+            - name: Install Composer dependencies
+                run: composer install --prefer-dist --no-progress
+            - name: Copy .env
+                run: cp .env.example .env
+            - name: Generate key
+                run: php artisan key:generate
+            - name: Run migrations
+                run: php artisan migrate --env=testing --force
+            - name: Run tests
+                run: php artisan test --coverage --min=80
+
+    deploy-backend:
+        needs: [test-backend]
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Deploy to Production
+                uses: appleboy/ssh-action@v1.0.0
+                with:
+                    host: ${{ secrets.PRODUCTION_HOST }}
+                    username: ${{ secrets.PRODUCTION_USER }}
+                    key: ${{ secrets.PRODUCTION_SSH_KEY }}
+                    script: |
+                        cd /var/www/curonews
+                        git pull origin main
+                        composer install --no-dev --optimize-autoloader
+                        php artisan migrate --force
+                        php artisan config:cache
+                        php artisan route:cache
+                        php artisan view:cache
+                        php artisan queue:restart
+```
 ```
 
 ---
@@ -2498,12 +1974,12 @@ DAY 1-2: Foundation
 └── [ ] cPanel hosting setup
 
 DAY 3-4: Content Workflow
-├── [ ] Sourcer submission flow
-├── [ ] Post status state machine
-├── [ ] Telegram bot setup & registration
-├── [ ] SendTelegramNotification job
-├── [ ] Webhook handler for button callbacks
-└── [ ] Admin approval/rejection actions (with optional feedback)
+├── [x] Sourcer submission flow
+├── [x] Post status state machine
+├── [x] Telegram bot setup & registration
+├── [x] SendTelegramNotification job
+├── [x] Webhook handler for button callbacks
+└── [x] Admin approval/rejection actions (with optional feedback)
 
 DAY 5-6: Image Processing
 ├── [ ] Intervention Image integration
@@ -2513,23 +1989,18 @@ DAY 5-6: Image Processing
 ├── [ ] Local/Cloudinary upload
 └── [ ] Cron-based queue worker configuration
 
-DAY 7-8: Frontend Core
-├── [ ] Next.js project setup (Static Export)
-├── [ ] Tailwind + Shadcn configuration
-├── [ ] Design tokens & theme
-├── [ ] PostCard component
-├── [ ] PostGrid (Bento layout)
-├── [ ] PostModal component
-├── [ ] Feed page with infinite scroll
-└── [ ] Category filtering
+DAY 7-8: Laravel Web UI
+├── [ ] Blade layout + Tailwind tokens
+├── [ ] Bento grid cards (9:16) with blurred backdrop
+├── [ ] Article modal (Blade partial + Alpine/Livewire)
+├── [ ] Feed page with pagination / infinite scroll
+└── [ ] Category filtering + search
 
 DAY 9-10: Auth & Interactions
-├── [ ] Sanctum authentication
-├── [ ] Login/Register forms
-├── [ ] Auth state management
-├── [ ] Like/Save functionality
-├── [ ] User profile page
-├── [ ] Liked/Saved collections
+├── [ ] Sanctum authentication (session tokens)
+├── [ ] Login/Register forms (Blade)
+├── [ ] Like/Save functionality (AJAX endpoints + Livewire/Alpine)
+├── [ ] User profile page (likes/saves collections)
 ├── [ ] Testing & bug fixes
 └── [ ] Production deployment to cPanel
 
@@ -2578,12 +2049,6 @@ php artisan queue:work --queue=images,telegram,default
 php artisan filament:make-resource Post --generate
 php artisan test --filter=PostsTest
 
-# Frontend (Next.js)
-npx shadcn-ui@latest add button card dialog
-npm run dev
-npm run build && npm run start
-npm run test -- --watch
-
 # Telegram Bot Setup
 curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
   -d "url=https://api.curonews. com/api/telegram/webhook" \
@@ -2594,9 +2059,6 @@ curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
 
 - [Laravel 11 Documentation](https://laravel.com/docs/11.x)
 - [Filament PHP Documentation](https://filamentphp.com/docs)
-- [Next.js App Router](https://nextjs.org/docs/app)
-- [Shadcn/UI Components](https://ui.shadcn.com/)
-- [TanStack Query](https://tanstack.com/query/latest)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Intervention Image](https://image.intervention.io/v3)
 
